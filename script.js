@@ -7,9 +7,8 @@
    в README.md, раздел «Как получать заявки в Telegram».
    ============================================================ */
 const CONFIG = {
-  // Куда отправлять заявку. Пока пусто — демо-режим.
-  // Пример: '/api/lead' — когда сделаем серверную функцию.
-  endpoint: '',
+  // Куда отправлять заявку. Обрабатывает server.js и пересылает в Telegram.
+  endpoint: '/api/lead',
 
   // Минимальная длина сообщения
   minMessageLength: 10,
@@ -110,25 +109,28 @@ form.addEventListener('submit', async (event) => {
   showStatus('Отправляем…');
 
   try {
-    if (CONFIG.endpoint) {
-      const response = await fetch(CONFIG.endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error('Сервер ответил ошибкой');
-    } else {
-      // Демо-режим: сохраняем заявку локально, чтобы было видно, что она ушла
-      const leads = JSON.parse(localStorage.getItem('leads') || '[]');
-      leads.push(data);
-      localStorage.setItem('leads', JSON.stringify(leads));
+    const response = await fetch(CONFIG.endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok || !result.ok) {
+      throw new Error(result.error || 'Сервер ответил ошибкой');
     }
 
     showStatus('Заявка отправлена! Отвечу в течение суток.');
     form.reset();
   } catch (error) {
     console.error(error);
-    showStatus('Не получилось отправить. Напишите мне в Telegram.', true);
+    showStatus(
+      error.message === 'Отправка пока не настроена'
+        ? 'Форма ещё не подключена к Telegram.'
+        : 'Не получилось отправить. Напишите мне в Telegram.',
+      true,
+    );
   } finally {
     submitBtn.disabled = false;
   }
