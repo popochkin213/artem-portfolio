@@ -193,7 +193,11 @@ async function handleLead(req, res) {
 
 // --- Статические файлы ---------------------------------------------------
 function serveStatic(req, res, pathname) {
-  const relative = pathname === '/' ? 'index.html' : pathname.slice(1);
+  let relative = pathname === '/' ? 'index.html' : decodeURIComponent(pathname.slice(1));
+
+  // /cases/coffee/ -> /cases/coffee/index.html
+  if (relative.endsWith('/')) relative += 'index.html';
+
   const filePath = path.join(ROOT, relative);
 
   // Защита от выхода за пределы папки проекта (../../etc/passwd)
