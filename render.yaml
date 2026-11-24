@@ -1,0 +1,15 @@
+# Конфигурация деплоя на Render.com
+# Render сам прочитает этот файл, когда подключишь репозиторий.
+services:
+  - type: web
+    name: artem-portfolio
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      # Значения задаются в панели Render, в git не попадают
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
