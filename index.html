@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Имя Фамилия — Frontend-разработчик</title>
+  <meta name="description" content="Разрабатываю сайты и веб-приложения: быстро, аккуратно, под ключ.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ШАПКА -->
+  <header class="header">
+    <div class="container header__inner">
+      <a href="#top" class="logo">ИФ<span class="logo__dot">.</span></a>
+
+      <nav class="nav">
+        <a href="#about" class="nav__link">Обо мне</a>
+        <a href="#projects" class="nav__link">Проекты</a>
+        <a href="#contact" class="nav__link">Контакты</a>
+      </nav>
+
+      <a href="#contact" class="btn btn--small">Написать</a>
+    </div>
+  </header>
+
+  <main id="top">
+
+    <!-- ГЛАВНЫЙ ЭКРАН -->
+    <section class="hero">
+      <div class="hero__glow" aria-hidden="true"></div>
+
+      <div class="container hero__inner">
+        <span class="badge">Открыт к новым проектам</span>
+
+        <h1 class="hero__title">
+          Привет, я <span class="gradient-text">Имя Фамилия</span><br>
+          делаю сайты, которые работают
+        </h1>
+
+        <p class="hero__text">
+          Frontend-разработчик. Собираю лендинги, интерфейсы и небольшие
+          веб-приложения — от идеи до публикации в интернете.
+        </p>
+
+        <div class="hero__actions">
+          <a href="#contact" class="btn">Обсудить проект</a>
+          <a href="#projects" class="btn btn--ghost">Смотреть работы</a>
+        </div>
+
+        <dl class="stats">
+          <div class="stats__item">
+            <dt class="stats__value">12+</dt>
+            <dd class="stats__label">проектов</dd>
+          </div>
+          <div class="stats__item">
+            <dt class="stats__value">3 года</dt>
+            <dd class="stats__label">в разработке</dd>
+          </div>
+          <div class="stats__item">
+            <dt class="stats__value">24 ч</dt>
+            <dd class="stats__label">ответ на заявку</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- ОБО МНЕ -->
+    <section class="section" id="about">
+      <div class="container">
+        <h2 class="section__title">Обо мне</h2>
+        <p class="section__lead">
+          Пишу понятный код и объясняю, что происходит. Люблю задачи, где
+          нужно быстро получить работающий результат, а не идеальную архитектуру.
+        </p>
+
+        <div class="skills">
+          <span class="skill">HTML / CSS</span>
+          <span class="skill">JavaScript</span>
+          <span class="skill">React</span>
+          <span class="skill">Node.js</span>
+          <span class="skill">Git</span>
+          <span class="skill">Адаптивная вёрстка</span>
+          <span class="skill">API-интеграции</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ПРОЕКТЫ -->
+    <section class="section" id="projects">
+      <div class="container">
+        <h2 class="section__title">Проекты</h2>
+        <p class="section__lead">Несколько работ, чтобы было понятно, как я думаю.</p>
+
+        <div class="cards">
+          <article class="card">
+            <div class="card__icon">◈</div>
+            <h3 class="card__title">Лендинг для кофейни</h3>
+            <p class="card__text">
+              Одностраничник с меню, галереей и формой брони столика.
+              Заявки приходят прямо в Telegram.
+            </p>
+            <div class="card__tags">
+              <span>HTML</span><span>CSS</span><span>JS</span>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card__icon">◇</div>
+            <h3 class="card__title">Дашборд заказов</h3>
+            <p class="card__text">
+              Таблица с фильтрами, поиском и выгрузкой в CSV. Данные
+              подтягиваются из API.
+            </p>
+            <div class="card__tags">
+              <span>React</span><span>REST API</span>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card__icon">◆</div>
+            <h3 class="card__title">Телеграм-бот</h3>
+            <p class="card__text">
+              Бот-напоминалка: принимает задачу и время, пишет в нужный момент.
+            </p>
+            <div class="card__tags">
+              <span>Python</span><span>aiogram</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- КОНТАКТЫ -->
+    <section class="section section--contact" id="contact">
+      <div class="container container--narrow">
+        <h2 class="section__title">Напишите мне</h2>
+        <p class="section__lead">
+          Опишите задачу в двух словах — отвечу в течение суток и скажу,
+          сколько это займёт и сколько будет стоить.
+        </p>
+
+        <form class="form" id="contact-form" novalidate>
+          <div class="form__row">
+            <label class="field">
+              <span class="field__label">Имя</span>
+              <input class="field__input" type="text" name="name"
+                     placeholder="Как к вам обращаться" autocomplete="name" required>
+              <span class="field__error" data-error-for="name"></span>
+            </label>
+
+            <label class="field">
+              <span class="field__label">Email или Telegram</span>
+              <input class="field__input" type="text" name="contact"
+                     placeholder="you@mail.ru или @nickname" autocomplete="email" required>
+              <span class="field__error" data-error-for="contact"></span>
+            </label>
+          </div>
+
+          <label class="field">
+            <span class="field__label">Задача</span>
+            <textarea class="field__input field__input--area" name="message" rows="5"
+                      placeholder="Что нужно сделать?" required></textarea>
+            <span class="field__error" data-error-for="message"></span>
+          </label>
+
+          <button class="btn btn--full" type="submit">Отправить заявку</button>
+
+          <p class="form__status" id="form-status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <span>© <span id="year">2026</span> Имя Фамилия</span>
+      <div class="footer__links">
+        <a href="#" class="footer__link">Telegram</a>
+        <a href="#" class="footer__link">GitHub</a>
+        <a href="#" class="footer__link">Email</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

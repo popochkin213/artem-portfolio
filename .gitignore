@@ -1,0 +1,21 @@
+# зависимости (если появятся)
+node_modules/
+
+# секреты — НИКОГДА не коммитить
+.env
+.env.*
+!.env.example
+
+# служебное
+*.log
+npm-debug.log*
+dist/
+build/
+coverage/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# редакторы
+.vscode/
+.idea/
