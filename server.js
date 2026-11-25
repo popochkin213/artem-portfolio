@@ -116,28 +116,56 @@ function readBody(req, limitBytes = 10_000) {
 }
 
 // --- Отправка в Telegram -------------------------------------------------
-async function sendToTelegram({ name, contact, message }) {
+// Делает контакт клиента кликабельным: @nickname превращается в ссылку
+// на чат и в кнопку «Написать в Telegram» — ответить можно одним нажатием.
+function contactMarkup(contact) {
+  const raw = String(contact).trim();
+  const telegram = raw.match(/^@([a-zA-Z0-9_]{4,32})$/);
+
+  if (telegram) {
+    const url = `https://t.me/${telegram[1]}`;
+    return {
+      text: `<a href="${url}">${escapeHtml(raw)}</a>`,
+      button: { text: '💬 Написать в Telegram', url },
+    };
+  }
+
+  // email и телефон оставляем текстом: Telegram не любит mailto/tel в ссылках
+  return { text: escapeHtml(raw), button: null };
+}
+
+async function sendToTelegram({ name, contact, service, payment, message }) {
+  const client = contactMarkup(contact);
+
   const text = [
     '🔔 <b>Новая заявка с сайта</b>',
     '',
     `<b>Имя:</b> ${escapeHtml(name)}`,
-    `<b>Контакт:</b> ${escapeHtml(contact)}`,
+    `<b>Контакт:</b> ${client.text}`,
+    `<b>Услуга:</b> ${escapeHtml(service)}`,
+    `<b>Оплата:</b> ${escapeHtml(payment)}`,
     '',
     `<b>Задача:</b>`,
     escapeHtml(message),
   ].join('\n');
+
+  const body = {
+    chat_id: CHAT_ID,
+    text,
+    parse_mode: 'HTML',
+    disable_web_page_preview: true,
+  };
+
+  if (client.button) {
+    body.reply_markup = { inline_keyboard: [[client.button]] };
+  }
 
   const response = await fetch(
     `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: CHAT_ID,
-        text,
-        parse_mode: 'HTML',
-        disable_web_page_preview: true,
-      }),
+      body: JSON.stringify(body),
     },
   );
 
@@ -164,6 +192,8 @@ async function handleLead(req, res) {
 
   const name = String(data.name || '').trim().slice(0, 100);
   const contact = String(data.contact || '').trim().slice(0, 200);
+  const service = String(data.service || '').trim().slice(0, 100) || 'не указана';
+  const payment = String(data.payment || '').trim().slice(0, 60) || 'не указан';
   const message = String(data.message || '').trim().slice(0, 4000);
 
   // Ловушка для ботов: поле скрыто от людей, но автозаполнялки его видят
@@ -198,8 +228,8 @@ async function handleLead(req, res) {
   }
 
   try {
-    await sendToTelegram({ name, contact, message });
-    console.log(`[lead] отправлено: ${name} / ${contact}`);
+    await sendToTelegram({ name, contact, service, payment, message });
+    console.log(`[lead] отправлено: ${name} / ${contact} / ${service}`);
     return json(res, 200, { ok: true });
   } catch (error) {
     console.error('[lead] ошибка Telegram:', error.message);

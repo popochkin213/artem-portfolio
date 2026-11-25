@@ -17,6 +17,7 @@
       <nav class="nav">
         <a href="#about" class="nav__link">Обо мне</a>
         <a href="#projects" class="nav__link">Проекты</a>
+        <a href="#services" class="nav__link">Услуги</a>
         <a href="#contact" class="nav__link">Контакты</a>
       </nav>
 
@@ -135,6 +136,95 @@
       </div>
     </section>
 
+    <!-- УСЛУГИ И ЦЕНЫ -->
+    <section class="section" id="services">
+      <div class="container">
+        <h2 class="section__title">Услуги и цены</h2>
+        <p class="section__lead">
+          Готовые пакеты — чтобы не гадать, сколько это стоит.
+          Выберите подходящий, и он подставится в форму заявки.
+        </p>
+
+        <div class="plans">
+          <article class="plan">
+            <h3 class="plan__title">Лендинг</h3>
+            <p class="plan__price"><span>от</span> 15 000 ₽</p>
+            <p class="plan__term">3–5 дней</p>
+            <ul class="plan__list">
+              <li>Одна страница с продающим текстом</li>
+              <li>Адаптив под телефон</li>
+              <li>Форма заявки с уведомлением в Telegram</li>
+              <li>Публикация в интернете</li>
+            </ul>
+            <button class="btn btn--ghost btn--full" type="button"
+                    data-service="Лендинг — от 15 000 ₽">Выбрать</button>
+          </article>
+
+          <article class="plan plan--featured">
+            <span class="plan__badge">Чаще всего берут</span>
+            <h3 class="plan__title">Сайт-визитка</h3>
+            <p class="plan__price"><span>от</span> 30 000 ₽</p>
+            <p class="plan__term">5–7 дней</p>
+            <ul class="plan__list">
+              <li>До 5 страниц с общим меню</li>
+              <li>Адаптив и аккуратная типографика</li>
+              <li>Форма заявки + уведомления в Telegram</li>
+              <li>Базовые SEO-теги и карта сайта</li>
+              <li>Публикация и передача доступов</li>
+            </ul>
+            <button class="btn btn--full" type="button"
+                    data-service="Сайт-визитка — от 30 000 ₽">Выбрать</button>
+          </article>
+
+          <article class="plan">
+            <h3 class="plan__title">Магазин / каталог</h3>
+            <p class="plan__price"><span>от</span> 60 000 ₽</p>
+            <p class="plan__term">7–14 дней</p>
+            <ul class="plan__list">
+              <li>Каталог товаров с карточками</li>
+              <li>Фильтры, поиск, сортировка</li>
+              <li>Корзина и оформление заказа</li>
+              <li>Выгрузка заказов в таблицу</li>
+            </ul>
+            <button class="btn btn--ghost btn--full" type="button"
+                    data-service="Магазин / каталог — от 60 000 ₽">Выбрать</button>
+          </article>
+
+          <article class="plan">
+            <h3 class="plan__title">Доработка</h3>
+            <p class="plan__price"><span>от</span> 3 000 ₽</p>
+            <p class="plan__term">1–2 дня</p>
+            <ul class="plan__list">
+              <li>Правки и новые блоки на готовом сайте</li>
+              <li>Ускорение загрузки</li>
+              <li>Починка формы или вёрстки</li>
+              <li>Подключение аналитики</li>
+            </ul>
+            <button class="btn btn--ghost btn--full" type="button"
+                    data-service="Доработка — от 3 000 ₽">Выбрать</button>
+          </article>
+        </div>
+
+        <div class="pay-note">
+          <h3 class="pay-note__title">Как происходит оплата</h3>
+          <p class="pay-note__text">
+            Работаем в два этапа: <strong>50% предоплата</strong>, остальное —
+            после сдачи. Перед началом присылаю смету и сроки в переписке,
+            чтобы не было сюрпризов.
+          </p>
+          <ul class="pay-note__list">
+            <li><strong>СБП</strong> — перевод по номеру телефона, без комиссии</li>
+            <li><strong>Карта</strong> — перевод на карту</li>
+            <li><strong>Счёт</strong> — для ИП и ООО, с закрывающими документами</li>
+          </ul>
+          <p class="pay-note__text">
+            Реквизиты присылаю в переписке после согласования задачи —
+            на сайте их нет специально.
+          </p>
+        </div>
+      </div>
+    </section>
+
     <!-- КАК Я РАБОТАЮ -->
     <section class="section" id="process">
       <div class="container">
@@ -205,11 +295,49 @@
           </div>
 
           <label class="field">
+            <span class="field__label">Что нужно</span>
+            <select class="field__input field__input--select" name="service" required>
+              <option value="">— выберите услугу —</option>
+              <option>Лендинг — от 15 000 ₽</option>
+              <option>Сайт-визитка — от 30 000 ₽</option>
+              <option>Магазин / каталог — от 60 000 ₽</option>
+              <option>Доработка — от 3 000 ₽</option>
+              <option>Другое / не знаю</option>
+            </select>
+            <span class="field__error" data-error-for="service"></span>
+          </label>
+
+          <label class="field">
             <span class="field__label">Задача</span>
             <textarea class="field__input field__input--area" name="message" rows="5"
                       placeholder="Что нужно сделать?" required></textarea>
             <span class="field__error" data-error-for="message"></span>
           </label>
+
+          <fieldset class="field field--group">
+            <legend class="field__label">Как удобнее оплатить</legend>
+            <div class="choices">
+              <label class="choice">
+                <input type="radio" name="payment" value="СБП" checked>
+                <span>СБП</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="payment" value="Карта">
+                <span>Карта</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="payment" value="Счёт (ИП/ООО)">
+                <span>Счёт</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="payment" value="Обсудим">
+                <span>Обсудим</span>
+              </label>
+            </div>
+            <span class="field__hint">
+              50% предоплата, остальное после сдачи. Реквизиты пришлю в переписке.
+            </span>
+          </fieldset>
 
           <button class="btn btn--full" type="submit">Отправить заявку</button>
 

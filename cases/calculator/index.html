@@ -425,6 +425,8 @@
         body: JSON.stringify({
           name,
           contact,
+          service: `Расчёт: ${typeNames[type]} — ${money(sum)}`,
+          payment: 'Обсудим',
           message,
           website: form.elements.website.value,
           elapsed: Date.now() - formLoadedAt,

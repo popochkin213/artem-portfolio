@@ -58,6 +58,7 @@ function setError(fieldName, message) {
 function validate() {
   const name = form.elements.name.value.trim();
   const contact = form.elements.contact.value.trim();
+  const service = form.elements.service.value;
   const message = form.elements.message.value.trim();
 
   let ok = true;
@@ -74,6 +75,13 @@ function validate() {
     ok = false;
   } else {
     setError('contact', '');
+  }
+
+  if (!service) {
+    setError('service', 'Выберите услугу — или «Другое / не знаю»');
+    ok = false;
+  } else {
+    setError('service', '');
   }
 
   if (message.length < CONFIG.minMessageLength) {
@@ -103,6 +111,8 @@ form.addEventListener('submit', async (event) => {
   const data = {
     name: form.elements.name.value.trim(),
     contact: form.elements.contact.value.trim(),
+    service: form.elements.service.value,
+    payment: form.elements.payment.value,
     message: form.elements.message.value.trim(),
     website: form.elements.website.value, // ловушка: у человека всегда пусто
     elapsed: Date.now() - formLoadedAt,
@@ -144,6 +154,32 @@ form.addEventListener('submit', async (event) => {
 // Убираем ошибку, как только человек начал исправлять поле
 ['name', 'contact', 'message'].forEach((fieldName) => {
   form.elements[fieldName].addEventListener('input', () => setError(fieldName, ''));
+});
+
+form.elements.service.addEventListener('change', () => setError('service', ''));
+
+/* ============================================================
+   Кнопки «Выбрать» в блоке услуг
+   ------------------------------------------------------------
+   Подставляют пакет в форму заявки и прокручивают к ней.
+   ============================================================ */
+document.querySelectorAll('[data-service]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const value = button.dataset.service;
+    const select = form.elements.service;
+
+    // Если такого варианта нет — ставим «Другое»
+    const hasOption = [...select.options].some((option) => option.value === value);
+    select.value = hasOption ? value : 'Другое / не знаю';
+
+    setError('service', '');
+    document.getElementById('contact').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    setTimeout(() => {
+      form.elements.name.focus({ preventScroll: true });
+      showStatus(`Выбрано: ${select.value}`);
+    }, 450);
+  });
 });
 
 /* ============================================================

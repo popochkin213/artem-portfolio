@@ -379,6 +379,134 @@ img { max-width: 100%; display: block; }
   color: var(--text-muted);
 }
 
+/* Услуги и цены */
+.plans {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 22px;
+  align-items: stretch;
+}
+
+.plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 30px 26px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.plan--featured {
+  border-color: var(--accent);
+  background: linear-gradient(165deg, rgba(124, 92, 255, .14), var(--card) 55%);
+  box-shadow: 0 24px 50px -30px rgba(124, 92, 255, .9);
+}
+
+.plan__badge {
+  position: absolute;
+  top: -12px;
+  left: 24px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.plan__title {
+  margin: 0 0 12px;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.plan__price {
+  margin: 0 0 4px;
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+.plan__price span {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.plan__term {
+  margin: 0 0 20px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.plan__list {
+  flex: 1;
+  margin: 0 0 24px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 9px;
+}
+
+.plan__list li {
+  position: relative;
+  padding-left: 22px;
+  font-size: 14.5px;
+  color: #b9b9cb;
+}
+
+.plan__list li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--accent-2);
+  font-weight: 700;
+}
+
+/* Блок про оплату */
+.pay-note {
+  margin-top: 26px;
+  padding: 28px 30px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-soft);
+}
+
+.pay-note__title {
+  margin: 0 0 10px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.pay-note__text {
+  margin: 0 0 14px;
+  max-width: 640px;
+  font-size: 15px;
+  color: var(--text-muted);
+}
+.pay-note__text:last-child { margin-bottom: 0; }
+.pay-note__text strong { color: var(--text); }
+
+.pay-note__list {
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pay-note__list li {
+  padding: 8px 14px;
+  border: 1px solid var(--border-bright);
+  border-radius: 999px;
+  font-size: 13.5px;
+  color: #c4c4d4;
+}
+.pay-note__list strong { color: var(--text); }
+
 /* ============================================================
    Форма
    ============================================================ */
@@ -433,6 +561,74 @@ img { max-width: 100%; display: block; }
 .field__input--area {
   resize: vertical;
   min-height: 130px;
+}
+
+.field__input--select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 42px;
+  background-image: linear-gradient(45deg, transparent 50%, #8f8fa8 50%),
+                    linear-gradient(135deg, #8f8fa8 50%, transparent 50%);
+  background-position: calc(100% - 21px) calc(50% + 2px),
+                       calc(100% - 15px) calc(50% + 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.field__hint {
+  display: block;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* Радиокнопки «как оплатить» */
+.field--group {
+  margin: 0 0 22px;
+  padding: 0;
+  border: 0;
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.choice {
+  position: relative;
+  cursor: pointer;
+}
+
+.choice input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.choice span {
+  display: block;
+  padding: 10px 18px;
+  border: 1px solid var(--border-bright);
+  border-radius: 11px;
+  background: #0b0b12;
+  font-size: 14px;
+  color: #b9b9cb;
+  transition: border-color .18s ease, color .18s ease, background .18s ease;
+}
+
+.choice:hover span { border-color: var(--accent); }
+
+.choice input:checked + span {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.choice input:focus-visible + span {
+  box-shadow: 0 0 0 3px rgba(124, 92, 255, .25);
 }
 
 .field--invalid .field__input { border-color: #ef4444; }
@@ -512,6 +708,8 @@ img { max-width: 100%; display: block; }
   .section { padding: 64px 0; }
   .form { padding: 22px; }
   .form__row { grid-template-columns: 1fr; gap: 0; }
+  .pay-note { padding: 22px; }
+  .plans { gap: 16px; }
 }
 
 /* Уважаем настройку «уменьшить анимацию» */
