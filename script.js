@@ -36,6 +36,9 @@ function isValidContact(value) {
 const form = document.getElementById('contact-form');
 const statusEl = document.getElementById('form-status');
 
+// Время открытия страницы — по нему сервер отсекает слишком быстрые отправки
+const formLoadedAt = Date.now();
+
 // Показывает/убирает ошибку у конкретного поля
 function setError(fieldName, message) {
   const input = form.elements[fieldName];
@@ -101,6 +104,8 @@ form.addEventListener('submit', async (event) => {
     name: form.elements.name.value.trim(),
     contact: form.elements.contact.value.trim(),
     message: form.elements.message.value.trim(),
+    website: form.elements.website.value, // ловушка: у человека всегда пусто
+    elapsed: Date.now() - formLoadedAt,
     sentAt: new Date().toISOString(),
   };
 

@@ -186,6 +186,16 @@
   .status { min-height: 20px; margin: 12px 0 0; font-size: 13.5px; color: var(--ok); text-align: center; }
   .status.err { color: #f87171; }
 
+  .hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+
   @media (max-width: 820px) {
     .layout { grid-template-columns: 1fr; }
     .total-card { position: static; }
@@ -292,6 +302,11 @@
       <div class="breakdown" id="breakdown"></div>
 
       <form id="lead-form">
+        <div class="hp" aria-hidden="true">
+          <label for="website">Сайт</label>
+          <input id="website" name="website" type="text" tabindex="-1" autocomplete="off">
+        </div>
+
         <div class="field">
           <label for="name">Имя</label>
           <input id="name" name="name" type="text" placeholder="Как к вам обращаться" required>
@@ -320,6 +335,7 @@
   };
 
   const form = document.getElementById('lead-form');
+  const formLoadedAt = Date.now();
   const pagesInput = document.getElementById('pages');
   const pagesOut = document.getElementById('pages-out');
   const totalEl = document.getElementById('total');
@@ -406,7 +422,13 @@
       const response = await fetch('/api/lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, contact, message }),
+        body: JSON.stringify({
+          name,
+          contact,
+          message,
+          website: form.elements.website.value,
+          elapsed: Date.now() - formLoadedAt,
+        }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result.ok) throw new Error(result.error || 'Ошибка');

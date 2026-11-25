@@ -56,8 +56,11 @@ const MIME = {
 };
 
 // --- Простая защита от спама ---------------------------------------------
-// Не больше 5 заявок с одного IP за 10 минут.
-const RATE_LIMIT = { max: 5, windowMs: 10 * 60 * 1000 };
+// Не больше N заявок с одного IP за окно времени. Настраивается через .env.
+const RATE_LIMIT = {
+  max: Number(process.env.RATE_LIMIT_MAX) || 5,
+  windowMs: (Number(process.env.RATE_LIMIT_WINDOW_MIN) || 10) * 60 * 1000,
+};
 const hits = new Map();
 
 function isRateLimited(ip) {
@@ -162,6 +165,19 @@ async function handleLead(req, res) {
   const name = String(data.name || '').trim().slice(0, 100);
   const contact = String(data.contact || '').trim().slice(0, 200);
   const message = String(data.message || '').trim().slice(0, 4000);
+
+  // Ловушка для ботов: поле скрыто от людей, но автозаполнялки его видят
+  if (String(data.website || '').trim()) {
+    console.log('[lead] отброшено: заполнено honeypot-поле');
+    return json(res, 200, { ok: true }); // отвечаем «успех», чтобы бот не догадался
+  }
+
+  // Слишком быстрая отправка — человек физически не успеет за 1.5 секунды
+  const elapsed = Number(data.elapsed) || 0;
+  if (elapsed > 0 && elapsed < 1500) {
+    console.log(`[lead] отброшено: отправлено за ${elapsed} мс`);
+    return json(res, 200, { ok: true });
+  }
 
   if (name.length < 2) {
     return json(res, 422, { ok: false, error: 'Укажите имя' });

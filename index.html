@@ -135,6 +135,43 @@
       </div>
     </section>
 
+    <!-- КАК Я РАБОТАЮ -->
+    <section class="section" id="process">
+      <div class="container">
+        <h2 class="section__title">Как я работаю</h2>
+        <p class="section__lead">Без сюрпризов и «мы вам перезвоним».</p>
+
+        <div class="steps">
+          <article class="step">
+            <span class="step__num">01</span>
+            <h3 class="step__title">Обсуждаем задачу</h3>
+            <p class="step__text">
+              Вы описываете, что нужно. Я задаю вопросы и называю точную
+              цену и срок — до начала работы.
+            </p>
+          </article>
+
+          <article class="step">
+            <span class="step__num">02</span>
+            <h3 class="step__title">Показываю прогресс</h3>
+            <p class="step__text">
+              Через пару дней присылаю ссылку на черновик. Вы смотрите
+              вживую, а не по картинкам.
+            </p>
+          </article>
+
+          <article class="step">
+            <span class="step__num">03</span>
+            <h3 class="step__title">Довожу до результата</h3>
+            <p class="step__text">
+              Две итерации правок включены. Публикую сайт и передаю
+              все доступы вам.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
     <!-- КОНТАКТЫ -->
     <section class="section section--contact" id="contact">
       <div class="container container--narrow">
@@ -145,6 +182,12 @@
         </p>
 
         <form class="form" id="contact-form" novalidate>
+          <!-- Ловушка для ботов: скрыта от людей, автозаполнялки её видят -->
+          <div class="hp" aria-hidden="true">
+            <label for="website">Сайт</label>
+            <input id="website" name="website" type="text" tabindex="-1" autocomplete="off">
+          </div>
+
           <div class="form__row">
             <label class="field">
               <span class="field__label">Имя</span>

@@ -344,6 +344,41 @@ img { max-width: 100%; display: block; }
   transform: translateX(3px);
 }
 
+/* Шаги «как я работаю» */
+.steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 22px;
+}
+
+.step {
+  padding: 28px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: linear-gradient(160deg, var(--card), #0d0d14);
+}
+
+.step__num {
+  display: block;
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  color: var(--accent);
+}
+
+.step__title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.step__text {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text-muted);
+}
+
 /* ============================================================
    Форма
    ============================================================ */
@@ -418,6 +453,17 @@ img { max-width: 100%; display: block; }
   color: #34d399;
 }
 .form__status--error { color: #f87171; }
+
+/* Ловушка для ботов — не видна человеку */
+.hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
 
 /* ============================================================
    Подвал
