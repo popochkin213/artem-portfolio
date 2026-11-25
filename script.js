@@ -22,15 +22,12 @@ const CONFIG = {
 const yearEl = document.getElementById('year');
 if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-// Проверка: похоже ли на email или на @nickname из Telegram
-function isValidContact(value) {
-  const v = value.trim();
-  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
-  const isTelegram = /^@[a-zA-Z0-9_]{4,32}$/.test(v);
-  return isEmail || isTelegram;
+// Проверка: похоже ли на email
+function isEmailAddress(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(value || '').trim());
 }
 
-// Галочка «это мой Telegram» показывается, только если вписали @никнейм
+// Проверка: похоже ли на @nickname из Telegram
 function isTelegramUsername(value) {
   return /^@[a-zA-Z0-9_]{4,32}$/.test(String(value || '').trim());
 }
@@ -88,11 +85,16 @@ function validate() {
     setError('name', '');
   }
 
-  if (!isValidContact(contact)) {
+  const isTgContact = isTelegramUsername(contact);
+  const isEmail = isEmailAddress(contact);
+
+  if (isTgContact) {
+    // Реальность @никнейма проверяет сервер (DNS)
+  } else if (isEmail) {
+    // email введён корректно, формат удовлетворительный
+  } else {
     setError('contact', 'Нужен email или @никнейм в Telegram');
     ok = false;
-  } else {
-    setError('contact', '');
   }
 
   if (!service) {

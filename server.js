@@ -280,7 +280,13 @@ async function handleLead(req, res) {
     return json(res, 422, { ok: false, error: 'Укажите имя' });
   }
 
-  if (!(await isEmailDomainUsable(contact))) {
+  // Серверная проверка формата email (клиент уже проверяет)
+  const contactIsTelegram = isTelegramUsername(contact);
+  const contactIsEmail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(contact);
+  if (contact && !contactIsTelegram && !contactIsEmail) {
+    return json(res, 422, { ok: false, error: 'Некорректный email или @никнейм' });
+  }
+  if (contactIsEmail && !(await isEmailDomainUsable(contact))) {
     return json(res, 422, { ok: false, error: 'Домен почты не проверен — проверьте адрес' });
   }
 
