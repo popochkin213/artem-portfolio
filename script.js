@@ -179,9 +179,11 @@ form.addEventListener('submit', async (event) => {
     showStatus(
       error.message === 'Подтвердите, что номер в Telegram — ваш'
         ? error.message
-        : error.message === 'Отправка пока не подключена'
-          ? 'Форма ещё не подключена к Telegram.'
-          : 'Не получилось отправить. Напишите мне в Telegram.',
+        : error.message === 'Домен почты не проверен — проверьте адрес'
+          ? error.message
+          : error.message === 'Отправка пока не подключена'
+            ? 'Форма ещё не подключена к Telegram.'
+            : 'Не получилось отправить. Напишите мне в Telegram.',
       true,
     );
   } finally {

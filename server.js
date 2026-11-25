@@ -12,6 +12,7 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
+const dns = require('node:dns/promises');
 
 // --- Настройки из .env ---------------------------------------------------
 // process.loadEnvFile появился в Node 20.12+. Если файла нет — просто
@@ -123,6 +124,8 @@ function readBody(req, limitBytes = 10_000) {
 // --- Отправка в Telegram -------------------------------------------------
 // Делает контакт клиента кликабельным: @nickname превращается в ссылку
 // на чат и в кнопку «Написать в Telegram» — ответить можно одним нажатием.
+// mailto-ссылка — в Telegram HTML-разметка её поддерживает: клиент может
+// одной кнопкой открыть почту и написать адресату самому.
 function contactMarkup(contact) {
   const raw = String(contact).trim();
   const telegram = raw.match(/^@([a-zA-Z0-9_]{4,32})$/);
@@ -135,8 +138,38 @@ function contactMarkup(contact) {
     };
   }
 
-  // email и телефон оставляем текстом: Telegram не любит mailto/tel в ссылках
+  const email = raw.match(/^([^\s@]+@[^\s@]+\.[^\s@]{2,})$/);
+  if (email) {
+    return {
+      text: `<a href="mailto:${escapeHtml(raw)}">${escapeHtml(raw)}</a>`,
+      button: null,
+    };
+  }
+
   return { text: escapeHtml(raw), button: null };
+}
+
+// Проверяем, что домен почты на самом деле используется в DNS:
+// есть MX-запись (настоящий почтовый сервер) или хотя бы A/AAAA.
+async function isEmailDomainUsable(contact) {
+  const raw = String(contact).trim();
+  const match = raw.match(/^[^\s@]+@([^\s@]+\.[^\s@]{2,})$/);
+  if (!match) return true; // не email — ничего проверять не надо
+
+  const domain = match[1].toLowerCase();
+  const answers = (fn, arg) =>
+    Promise.resolve()
+      .then(() => fn(arg))
+      .then((records) => records.length > 0)
+      .catch(() => false);
+
+  const hasMx = await answers(dns.resolveMx, domain);
+  if (hasMx) return true;
+  const hasA = await answers(dns.resolve4, domain);
+  if (hasA) return true;
+  const hasAAAA = await answers(dns.resolve6, domain);
+  if (hasAAAA) return true;
+  return false;
 }
 
 async function sendToTelegram({ name, contact, service, payment, message }) {
@@ -245,6 +278,10 @@ async function handleLead(req, res) {
 
   if (name.length < 2) {
     return json(res, 422, { ok: false, error: 'Укажите имя' });
+  }
+
+  if (!(await isEmailDomainUsable(contact))) {
+    return json(res, 422, { ok: false, error: 'Домен почты не проверен — проверьте адрес' });
   }
 
   if (tgUser && !verify) {
