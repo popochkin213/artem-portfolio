@@ -22,22 +22,21 @@ const CONFIG = {
 const yearEl = document.getElementById('year');
 if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-// Проверка: похоже ли на email
+// Проверка: похоже ли на email.
+// Тестовые/документационные домены запрещены: они примеряются в формах,
+// а не реальные почтовые ящики.
+const BLOCKED_EMAIL_DOMAINS = ['example.com', 'example.org', 'example.net'];
+
 function isEmailAddress(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(value || '').trim());
+  const m = String(value || '').trim().match(/^[^\s@]+@([^\s@]+\.[^\s@]{2,})$/);
+  if (!m) return false;
+  const domain = m[1].toLowerCase();
+  return !BLOCKED_EMAIL_DOMAINS.includes(domain);
 }
 
 // Проверка: похоже ли на @nickname из Telegram
 function isTelegramUsername(value) {
   return /^@[a-zA-Z0-9_]{4,32}$/.test(String(value || '').trim());
-}
-
-function showVerifyLabel(contact) {
-  if (!verifyLabel) return;
-  const isTg = isTelegramUsername(contact);
-  verifyLabel.hidden = !isTg;
-  verifyUsernameEl.textContent = isTg ? contact.trim() : '';
-  verifyInput.checked = false;
 }
 
 /* ============================================================
@@ -46,9 +45,6 @@ function showVerifyLabel(contact) {
 const form = document.getElementById('contact-form');
 const statusEl = document.getElementById('form-status');
 const consentLabel = document.getElementById('consent-label');
-const verifyLabel = document.getElementById('verify-label');
-const verifyInput = document.getElementById('verify-tg');
-const verifyUsernameEl = document.getElementById('verify-username');
 
 // Время открытия страницы — по нему сервер отсекает слишком быстрые отправки
 const formLoadedAt = Date.now();
@@ -114,13 +110,6 @@ function validate() {
   consentLabel.classList.toggle('consent--invalid', !consent);
   if (!consent) ok = false;
 
-  if (isTelegramUsername(contact) && !verifyInput.checked) {
-    verifyLabel.classList.toggle('consent--invalid', true);
-    ok = false;
-  } else {
-    verifyLabel.classList.remove('consent--invalid');
-  }
-
   return ok;
 }
 
@@ -151,7 +140,6 @@ form.addEventListener('submit', async (event) => {
     payment: form.elements.payment.value,
     message: form.elements.message.value.trim(),
     consent: true,
-    verify: isTelegramUsername(contactValue) ? verifyInput.checked : true,
     website: form.elements.website.value, // ловушка: у человека всегда пусто
     elapsed: Date.now() - formLoadedAt,
     sentAt: new Date().toISOString(),
@@ -179,13 +167,11 @@ form.addEventListener('submit', async (event) => {
   } catch (error) {
     console.error(error);
     showStatus(
-      error.message === 'Подтвердите, что номер в Telegram — ваш'
+      error.message === 'Домен почты не проверен — проверьте адрес'
         ? error.message
-        : error.message === 'Домен почты не проверен — проверьте адрес'
-          ? error.message
-          : error.message === 'Отправка пока не подключена'
-            ? 'Форма ещё не подключена к Telegram.'
-            : 'Не получилось отправить. Напишите мне в Telegram.',
+        : error.message === 'Отправка пока не подключена'
+          ? 'Форма ещё не подключена к Telegram.'
+          : 'Не получилось отправить. Напишите мне в Telegram.',
       true,
     );
   } finally {
@@ -196,14 +182,6 @@ form.addEventListener('submit', async (event) => {
 // Убираем ошибку, как только человек начал исправлять поле
 ['name', 'contact', 'message'].forEach((fieldName) => {
   form.elements[fieldName].addEventListener('input', () => setError(fieldName, ''));
-});
-
-form.elements.contact.addEventListener('input', () => {
-  showVerifyLabel(form.elements.contact.value);
-});
-
-verifyInput.addEventListener('change', () => {
-  verifyLabel.classList.remove('consent--invalid');
 });
 
 form.elements.service.addEventListener('change', () => setError('service', ''));

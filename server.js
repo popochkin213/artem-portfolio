@@ -151,12 +151,15 @@ function contactMarkup(contact) {
 
 // Проверяем, что домен почты на самом деле используется в DNS:
 // есть MX-запись (настоящий почтовый сервер) или хотя бы A/AAAA.
+const BLOCKED_EMAIL_DOMAINS = ['example.com', 'example.org', 'example.net'];
+
 async function isEmailDomainUsable(contact) {
   const raw = String(contact).trim();
   const match = raw.match(/^[^\s@]+@([^\s@]+\.[^\s@]{2,})$/);
   if (!match) return true; // не email — ничего проверять не надо
 
   const domain = match[1].toLowerCase();
+  if (BLOCKED_EMAIL_DOMAINS.includes(domain)) return false;
   const answers = (fn, arg) =>
     Promise.resolve()
       .then(() => fn(arg))
@@ -213,32 +216,6 @@ async function sendToTelegram({ name, contact, service, payment, message }) {
   }
 }
 
-// Отдельное сообщение владельцу @никнейма: «подтвердите, что это ваш Telegram».
-// Telegram сам не подтверждает, что это человек, поэтому каналом становится
-// наличие диалога — подтвердить можно, нажав кнопку «Открыть диалог».
-// Требуется, чтобы у бота был режим Privacy Mode ВЫКЛЮЧЕН (в @BotFather).
-async function sendToTelegramVerify(username) {
-  const url = `https://t.me/${username}`;
-  const text = [
-    `🔐 Заявка с сайта указала контакт <b>@${username}</b>`,
-    'Для подтверждения, что это ваш Telegram:',
-    '1) нажмите «Открыть диалог с ботом»;',
-    '2) убедитесь, что это тот же чат, откуда пришли уведомления.',
-  ].join('\n');
-
-  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: username,
-      text: escapeHtml(text),
-      parse_mode: 'HTML',
-      disable_web_page_preview: true,
-      reply_markup: { inline_keyboard: [[{ text: '💬 Открыть диалог с ботом', url }]] },
-    }),
-  });
-}
-
 // --- Обработчик заявки ---------------------------------------------------
 async function handleLead(req, res) {
   // IP обрабатываем только в памяти: в логи, БД и сообщения Telegram не уходит.
@@ -257,11 +234,9 @@ async function handleLead(req, res) {
 
   const name = String(data.name || '').trim().slice(0, 100);
   const contact = String(data.contact || '').trim().slice(0, 200);
-  const tgUser = isTelegramUsername(contact) ? contact.slice(1) : '';
   const service = String(data.service || '').trim().slice(0, 100) || 'не указана';
   const payment = String(data.payment || '').trim().slice(0, 60) || 'не указан';
   const message = String(data.message || '').trim().slice(0, 4000);
-  const verify = data.verify === true || data.verify === 'true' || data.verify === 'on';
 
   // Ловушка для ботов: поле скрыто от людей, но автозаполнялки его видят
   if (String(data.website || '').trim()) {
@@ -282,16 +257,14 @@ async function handleLead(req, res) {
 
   // Серверная проверка формата email (клиент уже проверяет)
   const contactIsTelegram = isTelegramUsername(contact);
-  const contactIsEmail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(contact);
+  const contactIsEmail =
+    /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(contact) &&
+    !BLOCKED_EMAIL_DOMAINS.includes(contact.split('@')[1].toLowerCase());
   if (contact && !contactIsTelegram && !contactIsEmail) {
     return json(res, 422, { ok: false, error: 'Некорректный email или @никнейм' });
   }
   if (contactIsEmail && !(await isEmailDomainUsable(contact))) {
     return json(res, 422, { ok: false, error: 'Домен почты не проверен — проверьте адрес' });
-  }
-
-  if (tgUser && !verify) {
-    return json(res, 422, { ok: false, error: 'Подтвердите, что номер в Telegram — ваш' });
   }
 
   // Без явного согласия данные обрабатывать нельзя (152-ФЗ)
@@ -316,10 +289,6 @@ async function handleLead(req, res) {
 
   try {
     await sendToTelegram({ name, contact, service, payment, message });
-    if (tgUser) {
-      // Добиваем владельца @никнейма — диалог показывает, что это его чат.
-      await sendToTelegramVerify(tgUser).catch(() => {});
-    }
     console.log(`[lead] отправлено: ${name} / ${contact} / ${service}`);
     return json(res, 200, { ok: true });
   } catch (error) {
