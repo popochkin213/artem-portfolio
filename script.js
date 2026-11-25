@@ -259,3 +259,45 @@ try {
   // просто не показываем уведомление, сайт работает как обычно.
   if (cookieBar) cookieBar.hidden = true;
 }
+
+/* ============================================================
+   Статистика посетителей (счётчик + Telegram-уведомление)
+   ------------------------------------------------------------
+   На каждый визит в localStorage сохраняем visitorId и пингуем
+   POST /api/ping. Первый визит нового человека отправляет
+   уведомление в Telegram.
+   ============================================================ */
+(() => {
+  const statsEl = document.getElementById('footer-stats');
+
+  // Пинг серверу
+  try {
+    let visitorId = localStorage.getItem('visitorId');
+    if (!visitorId) {
+      visitorId = Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
+      localStorage.setItem('visitorId', visitorId);
+    }
+    fetch('/api/ping', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visitorId }),
+    }).catch(() => {});
+  } catch {
+    // localStorage недоступен — просто пингуем без id
+    fetch('/api/ping', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visitorId: '' }),
+    }).catch(() => {});
+  }
+
+  // Показываем статистику из сервера
+  if (statsEl) {
+    fetch('/api/stats')
+      .then((r) => r.json().catch(() => ({})))
+      .then((d) => {
+        if (d && d.ok && d.visits) statsEl.textContent = `Посетители: ${d.visits}`;
+      })
+      .catch(() => {});
+  }
+})();

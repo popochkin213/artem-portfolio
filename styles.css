@@ -728,6 +728,48 @@ img { max-width: 100%; display: block; }
   pointer-events: none;
 }
 
+/* Статистика посетителей (футер) */
+.footer__stats {
+  font-size: 13.5px;
+  color: #7a7a8f;
+  margin: 0 6px;
+}
+.footer__stats:not(:empty) { display: inline; }
+
+/* ============================================================
+   FAQ
+   ============================================================ */
+.faq { max-width: 680px; }
+
+.faq__title {
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-muted);
+}
+
+.faq__item {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.faq__q {
+  margin: 0 0 8px;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.faq__a {
+  margin: 0;
+  font-size: 15.5px;
+  line-height: 1.7;
+  color: #b9b9cb;
+}
+
+.faq__q a { color: var(--accent); }
+
 /* ============================================================
    Юридические страницы
    ============================================================ */

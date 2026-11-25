@@ -297,6 +297,54 @@ async function handleLead(req, res) {
   }
 }
 
+// --- Статистика посетителей ------------------------------------------------
+// Счётчик визитов для футера сайта. Первый визит (по visitorId из localStorage)
+// отправляет уведомление в Telegram — чтобы не спамить, по уникальному id.
+const stats = { visits: 0 };
+const statsSeenVisitors = new Map();
+
+async function sendStatsToTelegram(visits) {
+  const text = `📈 Новый визит с сайта\nВсего посетителей: ${visits}`;
+  await fetch(
+    `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: CHAT_ID,
+        text: escapeHtml(text),
+        parse_mode: 'HTML',
+        disable_web_page_preview: true,
+      }),
+    },
+  ).then((res) => res.json().catch(() => ({}))).catch(() => {});
+}
+
+async function handlePing(req, res) {
+  let data = {};
+  try {
+    data = JSON.parse(await readBody(req));
+  } catch {
+    // пусто или мусор — всё равно считаем
+  }
+
+  const visitorId = String(data.visitorId || '').slice(0, 80);
+  stats.visits += 1;
+
+  // Одно уведомление в Telegram на каждого нового визитора
+  if (visitorId && !statsSeenVisitors.has(visitorId)) {
+    statsSeenVisitors.set(visitorId, Date.now());
+    // Чистим записи старше 30 дней
+    const cutoff = Date.now() - 30 * 24 * 3600 * 1000;
+    for (const [id, at] of statsSeenVisitors) {
+      if (at < cutoff) statsSeenVisitors.delete(id);
+    }
+    await sendStatsToTelegram(stats.visits).catch(() => {});
+  }
+
+  return json(res, 200, { ok: true, visits: stats.visits });
+}
+
 // --- Статические файлы ---------------------------------------------------
 function serveStatic(req, res, pathname) {
   let relative = pathname === '/' ? 'index.html' : decodeURIComponent(pathname.slice(1));
@@ -342,6 +390,14 @@ const server = http.createServer(async (req, res) => {
 
   if (pathname === '/api/health') {
     return json(res, 200, { ok: true, telegramConfigured: IS_CONFIGURED });
+  }
+
+  if (pathname === '/api/ping' && req.method === 'POST') {
+    return handlePing(req, res);
+  }
+
+  if (pathname === '/api/stats') {
+    return json(res, 200, { ok: true, visits: stats.visits });
   }
 
   if (req.method !== 'GET' && req.method !== 'HEAD') {
