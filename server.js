@@ -212,6 +212,12 @@ async function handleLead(req, res) {
   if (name.length < 2) {
     return json(res, 422, { ok: false, error: 'Укажите имя' });
   }
+
+  // Без явного согласия данные обрабатывать нельзя (152-ФЗ)
+  const consent = data.consent === true || data.consent === 'true' || data.consent === 'on';
+  if (!consent) {
+    return json(res, 422, { ok: false, error: 'Нужно согласие на обработку данных' });
+  }
   if (contact.length < 3) {
     return json(res, 422, { ok: false, error: 'Укажите контакт' });
   }

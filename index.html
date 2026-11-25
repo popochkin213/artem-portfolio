@@ -337,7 +337,20 @@
             <span class="field__hint">
               50% предоплата, остальное после сдачи. Реквизиты пришлю в переписке.
             </span>
+            <span class="legal-links">
+              <a href="/privacy.html">Политика конфиденциальности</a>
+              <a href="/terms.html">Пользовательское соглашение</a>
+            </span>
           </fieldset>
+
+          <label class="consent" id="consent-label">
+            <input type="checkbox" name="consent">
+            <span>
+              Согласен с <a href="/privacy.html" target="_blank" rel="noopener">политикой конфиденциальности</a>
+              и <a href="/terms.html" target="_blank" rel="noopener">условиями соглашения</a>,
+              а также на обработку персональных данных.
+            </span>
+          </label>
 
           <button class="btn btn--full" type="submit">Отправить заявку</button>
 
@@ -352,12 +365,20 @@
     <div class="container footer__inner">
       <span>© <span id="year">2026</span> Артём Соколов</span>
       <div class="footer__links">
-        <a href="#" class="footer__link">Telegram</a>
-        <a href="#" class="footer__link">GitHub</a>
-        <a href="#" class="footer__link">Email</a>
+        <a href="https://github.com/popochkin213" class="footer__link" target="_blank" rel="noopener">GitHub</a>
+        <a href="/privacy.html" class="footer__link">Конфиденциальность</a>
+        <a href="/terms.html" class="footer__link">Соглашение</a>
       </div>
     </div>
   </footer>
+
+  <div class="cookie" id="cookie" hidden>
+    <p>
+      Сайт использует только технические cookies — без рекламы и слежки.
+      Подробнее в <a href="/privacy.html">политике конфиденциальности</a>.
+    </p>
+    <button class="btn btn--small" type="button" id="cookie-ok">Понятно</button>
+  </div>
 
   <script src="script.js"></script>
 </body>

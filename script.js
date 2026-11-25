@@ -35,6 +35,7 @@ function isValidContact(value) {
    ============================================================ */
 const form = document.getElementById('contact-form');
 const statusEl = document.getElementById('form-status');
+const consentLabel = document.getElementById('consent-label');
 
 // Время открытия страницы — по нему сервер отсекает слишком быстрые отправки
 const formLoadedAt = Date.now();
@@ -60,6 +61,7 @@ function validate() {
   const contact = form.elements.contact.value.trim();
   const service = form.elements.service.value;
   const message = form.elements.message.value.trim();
+  const consent = form.elements.consent.checked;
 
   let ok = true;
 
@@ -91,6 +93,9 @@ function validate() {
     setError('message', '');
   }
 
+  consentLabel.classList.toggle('consent--invalid', !consent);
+  if (!consent) ok = false;
+
   return ok;
 }
 
@@ -104,7 +109,12 @@ form.addEventListener('submit', async (event) => {
   event.preventDefault();
 
   if (!validate()) {
-    showStatus('Проверьте поля выше', true);
+    showStatus(
+      form.elements.consent.checked
+        ? 'Проверьте поля выше'
+        : 'Поставьте галочку согласия — без неё отправить нельзя',
+      true,
+    );
     return;
   }
 
@@ -114,6 +124,7 @@ form.addEventListener('submit', async (event) => {
     service: form.elements.service.value,
     payment: form.elements.payment.value,
     message: form.elements.message.value.trim(),
+    consent: true,
     website: form.elements.website.value, // ловушка: у человека всегда пусто
     elapsed: Date.now() - formLoadedAt,
     sentAt: new Date().toISOString(),
@@ -158,6 +169,10 @@ form.addEventListener('submit', async (event) => {
 
 form.elements.service.addEventListener('change', () => setError('service', ''));
 
+form.elements.consent.addEventListener('change', () => {
+  if (form.elements.consent.checked) consentLabel.classList.remove('consent--invalid');
+});
+
 /* ============================================================
    Кнопки «Выбрать» в блоке услуг
    ------------------------------------------------------------
@@ -201,4 +216,29 @@ if ('IntersectionObserver' in window) {
     el.classList.add('reveal');
     observer.observe(el);
   });
+}
+
+/* ============================================================
+   Уведомление о cookies
+   ------------------------------------------------------------
+   Показываем один раз. Выбор хранится в localStorage браузера,
+   на сервер ничего не отправляется.
+   ============================================================ */
+const cookieBar = document.getElementById('cookie');
+const cookieOk = document.getElementById('cookie-ok');
+const COOKIE_KEY = 'cookie-notice-accepted';
+
+try {
+  if (cookieBar && !localStorage.getItem(COOKIE_KEY)) {
+    cookieBar.hidden = false;
+  }
+
+  cookieOk?.addEventListener('click', () => {
+    localStorage.setItem(COOKIE_KEY, '1');
+    cookieBar.hidden = true;
+  });
+} catch {
+  // Приватный режим браузера может запрещать localStorage — тогда
+  // просто не показываем уведомление, сайт работает как обычно.
+  if (cookieBar) cookieBar.hidden = true;
 }

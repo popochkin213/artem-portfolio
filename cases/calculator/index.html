@@ -196,6 +196,29 @@
     pointer-events: none;
   }
 
+  .consent {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    margin: 0 0 14px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .consent input {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    margin: 2px 0 0;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .consent a { color: var(--accent); }
+  .consent--invalid { color: #f87171; }
+
   @media (max-width: 820px) {
     .layout { grid-template-columns: 1fr; }
     .total-card { position: static; }
@@ -315,6 +338,15 @@
           <label for="contact">Email или Telegram</label>
           <input id="contact" name="contact" type="text" placeholder="you@mail.ru или @nick" required>
         </div>
+
+        <label class="consent">
+          <input type="checkbox" name="consent">
+          <span>
+            Согласен с <a href="/privacy.html" target="_blank" rel="noopener">политикой конфиденциальности</a>
+            и <a href="/terms.html" target="_blank" rel="noopener">условиями соглашения</a>.
+          </span>
+        </label>
+
         <button class="btn" type="submit">Отправить расчёт</button>
         <p class="status" id="status" role="status" aria-live="polite"></p>
       </form>
@@ -398,6 +430,13 @@
       statusEl.classList.add('err');
       return;
     }
+    if (!form.elements.consent.checked) {
+      statusEl.textContent = 'Поставьте галочку согласия';
+      statusEl.classList.add('err');
+      form.querySelector('.consent').classList.add('consent--invalid');
+      return;
+    }
+    form.querySelector('.consent').classList.remove('consent--invalid');
 
     const { type, speed, pages, sum, items } = calculate();
     const typeNames = { landing: 'Лендинг', corporate: 'Корпоративный', shop: 'Магазин' };
@@ -428,6 +467,7 @@
           service: `Расчёт: ${typeNames[type]} — ${money(sum)}`,
           payment: 'Обсудим',
           message,
+          consent: true,
           website: form.elements.website.value,
           elapsed: Date.now() - formLoadedAt,
         }),
