@@ -211,7 +211,7 @@ form.elements.consent.addEventListener('change', () => {
 /* ============================================================
    Кнопки «Выбрать» в блоке услуг
    ------------------------------------------------------------
-   Подставляют пакет в форму заявки и прокручивают к ней.
+   Подставляют пакет в форму заявки, не листая страницу вниз.
    ============================================================ */
 document.querySelectorAll('[data-service]').forEach((button) => {
   button.addEventListener('click', () => {
@@ -223,9 +223,9 @@ document.querySelectorAll('[data-service]').forEach((button) => {
     select.value = hasOption ? value : 'Другое / не знаю';
 
     setError('service', '');
-    document.getElementById('contact').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     setTimeout(() => {
+      // Не листаем вниз — фокус виден без скролла, пользователь остаётся наверху
       form.elements.name.focus({ preventScroll: true });
       showStatus(`Выбрано: ${select.value}`);
     }, 450);
