@@ -30,12 +30,28 @@ function isValidContact(value) {
   return isEmail || isTelegram;
 }
 
+// Галочка «это мой Telegram» показывается, только если вписали @никнейм
+function isTelegramUsername(value) {
+  return /^@[a-zA-Z0-9_]{4,32}$/.test(String(value || '').trim());
+}
+
+function showVerifyLabel(contact) {
+  if (!verifyLabel) return;
+  const isTg = isTelegramUsername(contact);
+  verifyLabel.hidden = !isTg;
+  verifyUsernameEl.textContent = isTg ? contact.trim() : '';
+  verifyInput.checked = false;
+}
+
 /* ============================================================
    Валидация и отправка формы
    ============================================================ */
 const form = document.getElementById('contact-form');
 const statusEl = document.getElementById('form-status');
 const consentLabel = document.getElementById('consent-label');
+const verifyLabel = document.getElementById('verify-label');
+const verifyInput = document.getElementById('verify-tg');
+const verifyUsernameEl = document.getElementById('verify-username');
 
 // Время открытия страницы — по нему сервер отсекает слишком быстрые отправки
 const formLoadedAt = Date.now();
@@ -96,6 +112,13 @@ function validate() {
   consentLabel.classList.toggle('consent--invalid', !consent);
   if (!consent) ok = false;
 
+  if (isTelegramUsername(contact) && !verifyInput.checked) {
+    verifyLabel.classList.toggle('consent--invalid', true);
+    ok = false;
+  } else {
+    verifyLabel.classList.remove('consent--invalid');
+  }
+
   return ok;
 }
 
@@ -118,13 +141,15 @@ form.addEventListener('submit', async (event) => {
     return;
   }
 
+  const contactValue = form.elements.contact.value.trim();
   const data = {
     name: form.elements.name.value.trim(),
-    contact: form.elements.contact.value.trim(),
+    contact: contactValue,
     service: form.elements.service.value,
     payment: form.elements.payment.value,
     message: form.elements.message.value.trim(),
     consent: true,
+    verify: isTelegramUsername(contactValue) ? verifyInput.checked : true,
     website: form.elements.website.value, // ловушка: у человека всегда пусто
     elapsed: Date.now() - formLoadedAt,
     sentAt: new Date().toISOString(),
@@ -152,9 +177,11 @@ form.addEventListener('submit', async (event) => {
   } catch (error) {
     console.error(error);
     showStatus(
-      error.message === 'Отправка пока не настроена'
-        ? 'Форма ещё не подключена к Telegram.'
-        : 'Не получилось отправить. Напишите мне в Telegram.',
+      error.message === 'Подтвердите, что номер в Telegram — ваш'
+        ? error.message
+        : error.message === 'Отправка пока не подключена'
+          ? 'Форма ещё не подключена к Telegram.'
+          : 'Не получилось отправить. Напишите мне в Telegram.',
       true,
     );
   } finally {
@@ -165,6 +192,14 @@ form.addEventListener('submit', async (event) => {
 // Убираем ошибку, как только человек начал исправлять поле
 ['name', 'contact', 'message'].forEach((fieldName) => {
   form.elements[fieldName].addEventListener('input', () => setError(fieldName, ''));
+});
+
+form.elements.contact.addEventListener('input', () => {
+  showVerifyLabel(form.elements.contact.value);
+});
+
+verifyInput.addEventListener('change', () => {
+  verifyLabel.classList.remove('consent--invalid');
 });
 
 form.elements.service.addEventListener('change', () => setError('service', ''));

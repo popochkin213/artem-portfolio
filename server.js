@@ -55,8 +55,13 @@ const MIME = {
   '.woff2': 'font/woff2',
 };
 
-// --- Простая защита от спама ---------------------------------------------
-// Не больше N заявок с одного IP за окно времени. Настраивается через .env.
+// --- Проверки контактов ----------------------------------------------------
+// Галочка согласия обязательна для любой заявки (152-ФЗ).
+// Если в поле «Email или Telegram» вписали @никнейм — ещё нужна
+// галочка «подтверждаю, что это мой Telegram».
+function isTelegramUsername(value) {
+  return /^@[a-zA-Z0-9_]{4,32}$/.test(String(value || '').trim());
+}
 const RATE_LIMIT = {
   max: Number(process.env.RATE_LIMIT_MAX) || 5,
   windowMs: (Number(process.env.RATE_LIMIT_WINDOW_MIN) || 10) * 60 * 1000,
@@ -175,8 +180,35 @@ async function sendToTelegram({ name, contact, service, payment, message }) {
   }
 }
 
+// Отдельное сообщение владельцу @никнейма: «подтвердите, что это ваш Telegram».
+// Telegram сам не подтверждает, что это человек, поэтому каналом становится
+// наличие диалога — подтвердить можно, нажав кнопку «Открыть диалог».
+// Требуется, чтобы у бота был режим Privacy Mode ВЫКЛЮЧЕН (в @BotFather).
+async function sendToTelegramVerify(username) {
+  const url = `https://t.me/${username}`;
+  const text = [
+    `🔐 Заявка с сайта указала контакт <b>@${username}</b>`,
+    'Для подтверждения, что это ваш Telegram:',
+    '1) нажмите «Открыть диалог с ботом»;',
+    '2) убедитесь, что это тот же чат, откуда пришли уведомления.',
+  ].join('\n');
+
+  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: username,
+      text: escapeHtml(text),
+      parse_mode: 'HTML',
+      disable_web_page_preview: true,
+      reply_markup: { inline_keyboard: [[{ text: '💬 Открыть диалог с ботом', url }]] },
+    }),
+  });
+}
+
 // --- Обработчик заявки ---------------------------------------------------
 async function handleLead(req, res) {
+  // IP обрабатываем только в памяти: в логи, БД и сообщения Telegram не уходит.
   const ip = req.socket.remoteAddress || 'unknown';
 
   if (isRateLimited(ip)) {
@@ -192,9 +224,11 @@ async function handleLead(req, res) {
 
   const name = String(data.name || '').trim().slice(0, 100);
   const contact = String(data.contact || '').trim().slice(0, 200);
+  const tgUser = isTelegramUsername(contact) ? contact.slice(1) : '';
   const service = String(data.service || '').trim().slice(0, 100) || 'не указана';
   const payment = String(data.payment || '').trim().slice(0, 60) || 'не указан';
   const message = String(data.message || '').trim().slice(0, 4000);
+  const verify = data.verify === true || data.verify === 'true' || data.verify === 'on';
 
   // Ловушка для ботов: поле скрыто от людей, но автозаполнялки его видят
   if (String(data.website || '').trim()) {
@@ -211,6 +245,10 @@ async function handleLead(req, res) {
 
   if (name.length < 2) {
     return json(res, 422, { ok: false, error: 'Укажите имя' });
+  }
+
+  if (tgUser && !verify) {
+    return json(res, 422, { ok: false, error: 'Подтвердите, что номер в Telegram — ваш' });
   }
 
   // Без явного согласия данные обрабатывать нельзя (152-ФЗ)
@@ -235,6 +273,10 @@ async function handleLead(req, res) {
 
   try {
     await sendToTelegram({ name, contact, service, payment, message });
+    if (tgUser) {
+      // Добиваем владельца @никнейма — диалог показывает, что это его чат.
+      await sendToTelegramVerify(tgUser).catch(() => {});
+    }
     console.log(`[lead] отправлено: ${name} / ${contact} / ${service}`);
     return json(res, 200, { ok: true });
   } catch (error) {
