@@ -18,8 +18,7 @@ npm run preview                          # http://localhost:8788
 `npm run preview` собирает `dist/` и запускает сайт в том же окружении,
 что и Cloudflare (функции + локальный KV для счётчика).
 
-Старый локальный сервер тоже остался: `npm start` → http://localhost:8000.
-Он нужен только как запасной вариант и не участвует в деплое.
+`npm start` — то же самое, если привычнее такая команда.
 
 ## Деплой на Cloudflare Pages
 
@@ -101,7 +100,7 @@ Workflow ставит зависимости, собирает `dist/` и выз
 - HTML экранируется перед отправкой в Telegram;
 - IP не хранится: для лимитов используется необратимый хеш с солью;
 - токен бота есть только в секретах Cloudflare, в браузер он не попадает;
-- служебные файлы (`server.js`, `.env`, `.git`, `wrangler.toml`) не попадают
+- служебные файлы (`.env`, `.git`, `functions/`, `wrangler.toml`) не попадают
   в `dist/` — сборка копирует только публичные файлы.
 
 ## SEO и аналитика
@@ -145,10 +144,9 @@ Workflow ставит зависимости, собирает `dist/` и выз
 │     ├─ stats.js          GET  /api/stats — статистика
 │     └─ health.js         GET  /api/health — проверка настроек
 ├─ scripts/build.js        сборка dist/ + CSP + _headers
+├─ scripts/indexnow.js     отправка URL в Яндекс/Bing после деплоя
 ├─ .github/workflows/deploy.yml  автодеплой
-├─ wrangler.toml           конфиг Cloudflare Pages
-├─ server.js               старый локальный сервер (запасной)
-└─ render.yaml             старый конфиг Render (можно удалить)
+└─ wrangler.toml           конфиг Cloudflare Pages
 ```
 
 ## Счётчик посетителей

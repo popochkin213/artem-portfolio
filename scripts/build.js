@@ -1,7 +1,7 @@
 /**
  * Сборка статической версии для Cloudflare Pages.
  *
- * Копирует в dist/ только публичные файлы (без server.js, .env, README),
+ * Копирует в dist/ только публичные файлы (без .env, README, функций),
  * считает SHA-256 всех inline-скриптов и генерирует dist/_headers
  * с жёсткой Content-Security-Policy без 'unsafe-inline' для скриптов.
  *

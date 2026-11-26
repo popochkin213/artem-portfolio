@@ -110,7 +110,7 @@ export async function allowRequest(env, key, max, windowSec) {
 
 /**
  * Проверка домена почты через DNS-over-HTTPS (в Workers нет node:dns).
- * MX → A → AAAA, как в локальном server.js.
+ * Порядок: MX → A → AAAA.
  */
 export async function isEmailDomainUsable(contact) {
   const domain = emailDomain(contact);
