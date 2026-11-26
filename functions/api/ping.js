@@ -78,13 +78,18 @@ export async function onRequest(context) {
   const parsed = await readJson(request, 2_000);
   const data = parsed.data || {};
   const visitorId = String(data.visitorId || '').slice(0, 80);
-  const state = await readState(env);
 
+  // Не даём накручивать просмотры: не больше 120 пингов с IP за 10 минут.
+  const ipKey = await hashIp(request, env);
+  if (!(await allowRequest(env, `ping:${ipKey}`, 120, 10 * 60))) {
+    return json({ ok: true, views: 0, visitors: 0 });
+  }
+
+  const state = await readState(env);
   state.views += 1;
 
   if (visitorId && !state.seen.has(visitorId)) {
     // Защита от накрутки: не больше 10 новых «посетителей» с IP в час
-    const ipKey = await hashIp(request, env);
     if (await allowRequest(env, `nv:${ipKey}`, 10, 3600)) {
       state.seen.set(visitorId, Date.now());
       state.visitors += 1;

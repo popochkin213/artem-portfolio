@@ -86,7 +86,8 @@ npm run deploy
 - `X-Frame-Options`, `Permissions-Policy`, `Referrer-Policy`,
   `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`;
 - заявки принимаются только с этого же сайта (проверка `Origin`);
-- лимит 5 заявок с IP за 10 минут, тело запроса ≤ 10 КБ;
+- лимит 5 заявок с IP за 10 минут, пинги счётчика — до 120 за 10 минут;
+- тело запроса ≤ 10 КБ;
 - honeypot-поле и проверка минимального времени заполнения;
 - email проверяется по формату и DNS домена (MX → A → AAAA),
   `example.com/.org/.net` блокируются;
