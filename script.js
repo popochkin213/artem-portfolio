@@ -306,41 +306,34 @@ try {
    ------------------------------------------------------------
    На каждый визит в localStorage сохраняем visitorId и пингуем
    POST /api/ping. Первый визит нового человека отправляет
-   уведомление в Telegram.
+   уведомление в Telegram. Ответ пинга сразу содержит счётчики —
+   отдельный запрос за статистикой не нужен.
    ============================================================ */
 (() => {
   const statsEl = document.getElementById('footer-stats');
 
-  // Пинг серверу
+  let visitorId = '';
   try {
-    let visitorId = localStorage.getItem('visitorId');
+    visitorId = localStorage.getItem('visitorId') || '';
     if (!visitorId) {
       visitorId = Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
       localStorage.setItem('visitorId', visitorId);
     }
-    fetch('/api/ping', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ visitorId }),
-    }).catch(() => {});
   } catch {
-    // localStorage недоступен — просто пингуем без id
-    fetch('/api/ping', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ visitorId: '' }),
-    }).catch(() => {});
+    // Приватный режим браузера может запрещать localStorage —
+    // пингуем без идентификатора, счётчик просмотров всё равно работает.
+    visitorId = '';
   }
 
-  // Показываем статистику из сервера
-  if (statsEl) {
-    fetch('/api/stats')
-      .then((r) => r.json().catch(() => ({})))
-      .then((d) => {
-        if (!d || !d.ok) return;
-        const visitors = Number(d.visitors) || 0;
-        if (visitors > 0) statsEl.textContent = `Посетителей: ${visitors}`;
-      })
-      .catch(() => {});
-  }
+  fetch('/api/ping', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ visitorId }),
+  })
+    .then((r) => r.json().catch(() => ({})))
+    .then((d) => {
+      const visitors = Number(d && d.visitors) || 0;
+      if (statsEl && visitors > 0) statsEl.textContent = `Посетителей: ${visitors}`;
+    })
+    .catch(() => {});
 })();
