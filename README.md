@@ -53,22 +53,25 @@ npx wrangler pages secret put TURNSTILE_SECRET   --project-name artem-portfolio
 npm run deploy
 ```
 
-### Вариант через GitHub
+### Автодеплой через GitHub Actions
 
-В панели Cloudflare: **Workers & Pages → Create → Pages → Connect to Git**.
-Выберите репозиторий и укажите:
+Каждый push в `main` сам собирает и публикует сайт:
+`.github/workflows/deploy.yml`.
 
-| Параметр | Значение |
-|---|---|
-| Build command | `npm run build` |
-| Build output directory | `dist` |
-| `SITE_URL` | `https://artem-portfolio-7m4.pages.dev` (или свой домен) |
-| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `RATE_SALT`, `TURNSTILE_SECRET` | secrets в настройках проекта |
-| KV binding | `STATS` → созданный namespace |
+Один раз добавьте секрет репозитория:
 
-Переменная `SITE_URL` подставляет адрес в канонические ссылки, `og:url`,
-`robots.txt` и `sitemap.xml`. Переменная `TURNSTILE_SITE_KEY` подставляет
-ключ проверки «я не робот» во все формы.
+**GitHub → Settings → Secrets and variables → Actions → New repository secret**
+
+- Name: `CLOUDFLARE_API_TOKEN`
+- Secret: API-токен Cloudflare с правами
+  **Account → Cloudflare Pages → Edit** и
+  **Account → Workers KV Storage → Edit**
+
+Workflow ставит зависимости, собирает `dist/` и вызывает
+`wrangler pages deploy`. Ручной `npm run deploy` тоже работает.
+
+`SITE_URL` и `TURNSTILE_SITE_KEY` заданы в workflow. Если появится свой
+домен или новый ключ Turnstile — обновите их там.
 
 ## Защита
 
