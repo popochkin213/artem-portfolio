@@ -431,6 +431,12 @@ function serveStatic(req, res, pathname) {
   // /cases/coffee/ -> /cases/coffee/index.html
   if (relative.endsWith('/')) relative += 'index.html';
 
+  // /faq -> /faq.html (как на Cloudflare Pages)
+  if (!relative.includes('.') && !relative.endsWith('/index.html')) {
+    const htmlCandidate = `${relative}.html`;
+    if (fs.existsSync(path.join(ROOT, htmlCandidate))) relative = htmlCandidate;
+  }
+
   const filePath = path.resolve(ROOT, relative);
 
   // Защита от выхода за пределы папки проекта (../../etc/passwd)

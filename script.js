@@ -61,12 +61,12 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
 // Тестовые/документационные домены запрещены: они примеряются в формах,
 // а не реальные почтовые ящики.
 const BLOCKED_EMAIL_DOMAINS = ['example.com', 'example.org', 'example.net'];
+const EMAIL_RE = /^[A-Za-z0-9._%+-]{1,64}@([A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,24}$/;
 
 function isEmailAddress(value) {
-  const m = String(value || '').trim().match(/^[^\s@]+@([^\s@]+\.[^\s@]{2,})$/);
-  if (!m) return false;
-  const domain = m[1].toLowerCase();
-  return !BLOCKED_EMAIL_DOMAINS.includes(domain);
+  const match = String(value || '').trim().match(EMAIL_RE);
+  if (!match) return false;
+  return !BLOCKED_EMAIL_DOMAINS.includes(match[1].toLowerCase());
 }
 
 // Проверка: похоже ли на @nickname из Telegram
@@ -169,6 +169,13 @@ form.addEventListener('submit', async (event) => {
     return;
   }
 
+  // Cloudflare Turnstile (если ключ задан на странице)
+  const turnstile = window.PortfolioTurnstile;
+  if (turnstile && turnstile.required() && !turnstile.getToken()) {
+    showStatus('Подтвердите, что вы человек, и отправьте ещё раз', true);
+    return;
+  }
+
   const contactValue = form.elements.contact.value.trim();
   const data = {
     name: form.elements.name.value.trim(),
@@ -180,6 +187,7 @@ form.addEventListener('submit', async (event) => {
     website: form.elements.website.value, // ловушка: у человека всегда пусто
     elapsed: Date.now() - formLoadedAt,
     sentAt: new Date().toISOString(),
+    turnstileToken: turnstile ? turnstile.getToken() : '',
   };
 
   const submitBtn = form.querySelector('button[type="submit"]');
@@ -207,6 +215,7 @@ form.addEventListener('submit', async (event) => {
 
     showStatus('Заявка отправлена! Отвечу в течение суток.');
     form.reset();
+    if (turnstile) turnstile.reset();
   } catch (error) {
     console.error(error);
     showStatus(

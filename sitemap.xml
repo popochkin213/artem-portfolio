@@ -1,49 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://artem-portfolio-xywf.onrender.com/</loc>
+    <loc>https://artem-portfolio.pages.dev/</loc>
     <lastmod>2026-11-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://artem-portfolio-xywf.onrender.com/sandbox.html</loc>
+    <loc>https://artem-portfolio.pages.dev/sandbox</loc>
     <lastmod>2026-11-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://artem-portfolio-xywf.onrender.com/faq.html</loc>
+    <loc>https://artem-portfolio.pages.dev/faq</loc>
     <lastmod>2026-11-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://artem-portfolio-xywf.onrender.com/cases/coffee/</loc>
+    <loc>https://artem-portfolio.pages.dev/cases/coffee/</loc>
     <lastmod>2026-11-26</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://artem-portfolio-xywf.onrender.com/cases/calculator/</loc>
+    <loc>https://artem-portfolio.pages.dev/cases/calculator/</loc>
     <lastmod>2026-11-26</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://artem-portfolio-xywf.onrender.com/cases/dashboard/</loc>
+    <loc>https://artem-portfolio.pages.dev/cases/dashboard/</loc>
     <lastmod>2026-11-26</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://artem-portfolio-xywf.onrender.com/privacy.html</loc>
+    <loc>https://artem-portfolio.pages.dev/privacy</loc>
     <lastmod>2026-11-26</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://artem-portfolio-xywf.onrender.com/terms.html</loc>
+    <loc>https://artem-portfolio.pages.dev/terms</loc>
     <lastmod>2026-11-26</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>

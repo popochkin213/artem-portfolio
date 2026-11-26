@@ -737,6 +737,15 @@ img { max-width: 100%; display: block; }
 }
 .form__status--error { color: #f87171; }
 
+/* Cloudflare Turnstile — невидимая проверка «я не робот» */
+.turnstile-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 14px;
+  min-height: 66px;
+}
+.turnstile-wrap[hidden] { display: none; }
+
 /* Ловушка для ботов — не видна человеку */
 .hp {
   position: absolute;

@@ -1,0 +1,12 @@
+# Скопируйте в .dev.vars — этот файл нужен только для локального
+# запуска Cloudflare-функций: npm run preview
+# .dev.vars в git не попадает.
+
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
+
+# Соль для необратимого хеша IP. Придумайте любую длинную строку.
+RATE_SALT=local-dev-only
+
+# Cloudflare Turnstile (необязательно). Если пусто — проверка отключена.
+TURNSTILE_SECRET=

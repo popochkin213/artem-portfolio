@@ -1,0 +1,202 @@
+/**
+ * Сборка статической версии для Cloudflare Pages.
+ *
+ * Копирует в dist/ только публичные файлы (без server.js, .env, README),
+ * считает SHA-256 всех inline-скриптов и генерирует dist/_headers
+ * с жёсткой Content-Security-Policy без 'unsafe-inline' для скриптов.
+ *
+ * Запуск: npm run build
+ */
+
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
+
+const ROOT = path.resolve(__dirname, '..');
+const DIST = path.join(ROOT, 'dist');
+
+const PUBLIC_ITEMS = [
+  'index.html',
+  'styles.css',
+  'script.js',
+  'turnstile.js',
+  'faq.html',
+  'sandbox.html',
+  'sandbox.js',
+  'privacy.html',
+  'terms.html',
+  '404.html',
+  'favicon.svg',
+  'robots.txt',
+  'sitemap.xml',
+  'cases',
+];
+
+function copyRecursive(source, target) {
+  const stat = fs.statSync(source);
+  if (stat.isDirectory()) {
+    fs.mkdirSync(target, { recursive: true });
+    for (const entry of fs.readdirSync(source)) {
+      copyRecursive(path.join(source, entry), path.join(target, entry));
+    }
+    return;
+  }
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.copyFileSync(source, target);
+}
+
+function walk(dir, extension, out = []) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walk(full, extension, out);
+    else if (full.endsWith(extension)) out.push(full);
+  }
+  return out;
+}
+
+// 1. Чистая сборка
+fs.rmSync(DIST, { recursive: true, force: true });
+fs.mkdirSync(DIST, { recursive: true });
+
+for (const item of PUBLIC_ITEMS) {
+  const source = path.join(ROOT, item);
+  if (!fs.existsSync(source)) {
+    console.warn(`[build] пропущено (нет файла): ${item}`);
+    continue;
+  }
+  copyRecursive(source, path.join(DIST, item));
+}
+
+// 2. Приводим текстовые файлы к LF: браузер всё равно нормализует переводы
+//    строк, а хеши inline-скриптов для CSP должны совпадать с тем, что видит
+//    браузер. С CRLF хеши бы не сошлись.
+for (const extension of ['.html', '.css', '.js', '.xml', '.txt']) {
+  for (const file of walk(DIST, extension)) {
+    const text = fs.readFileSync(file, 'utf8').replace(/\r\n?/g, '\n');
+    fs.writeFileSync(file, text, 'utf8');
+  }
+}
+
+// 3. Адрес сайта и ключ Turnstile можно задать переменными окружения.
+//    По умолчанию — бесплатный поддомен pages.dev.
+const SITE_URL = (process.env.SITE_URL || 'https://artem-portfolio.pages.dev').replace(/\/+$/, '');
+const TURNSTILE_SITE_KEY = (process.env.TURNSTILE_SITE_KEY || '').trim();
+
+if (!/^https:\/\/[a-z0-9.-]+$/i.test(SITE_URL)) {
+  throw new Error(`[build] некорректный SITE_URL: ${SITE_URL}`);
+}
+if (TURNSTILE_SITE_KEY && !/^[A-Za-z0-9_-]+$/.test(TURNSTILE_SITE_KEY)) {
+  throw new Error('[build] некорректный TURNSTILE_SITE_KEY');
+}
+
+const textFiles = [
+  ...walk(DIST, '.html'),
+  path.join(DIST, 'sitemap.xml'),
+  path.join(DIST, 'robots.txt'),
+];
+
+for (const file of textFiles) {
+  let text = fs.readFileSync(file, 'utf8');
+  text = text.split('https://artem-portfolio.pages.dev').join(SITE_URL);
+  if (TURNSTILE_SITE_KEY) {
+    text = text.split('<meta name="turnstile-site-key" content="">')
+      .join(`<meta name="turnstile-site-key" content="${TURNSTILE_SITE_KEY}">`);
+  }
+  fs.writeFileSync(file, text, 'utf8');
+}
+
+// 4. Проверки перед публикацией: никаких inline-обработчиков и javascript:
+//    (они несовместимы с жёсткой CSP и обычно означают XSS-риск).
+const htmlFiles = walk(DIST, '.html');
+for (const file of htmlFiles) {
+  const html = fs.readFileSync(file, 'utf8');
+  const relative = path.relative(DIST, file);
+
+  if (/\son[a-z]+\s*=\s*["']/i.test(html)) {
+    throw new Error(`[build] inline-обработчик события в ${relative}`);
+  }
+  if (/javascript\s*:/i.test(html)) {
+    throw new Error(`[build] ссылка javascript: в ${relative}`);
+  }
+}
+
+// 5. Хеши inline-скриптов для CSP
+const scriptHashes = new Set();
+for (const file of htmlFiles) {
+  const html = fs.readFileSync(file, 'utf8');
+  const pattern = /<script\b(?![^>]*\bsrc\s*=)[^>]*>([\s\S]*?)<\/script\s*>/gi;
+  for (const match of html.matchAll(pattern)) {
+    if (!match[1].trim()) continue;
+    const hash = crypto.createHash('sha256').update(match[1], 'utf8').digest('base64');
+    scriptHashes.add(`'sha256-${hash}'`);
+  }
+}
+
+const scriptSrc = ["'self'", 'https://challenges.cloudflare.com', ...scriptHashes].join(' ');
+
+const csp = [
+  "default-src 'self'",
+  "base-uri 'none'",
+  "object-src 'none'",
+  "form-action 'self'",
+  "frame-ancestors 'self'",
+  `script-src ${scriptSrc}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  "font-src 'self'",
+  "connect-src 'self' https://challenges.cloudflare.com",
+  "frame-src 'self' https://challenges.cloudflare.com",
+  "manifest-src 'self'",
+  "media-src 'self'",
+  "worker-src 'none'",
+  'upgrade-insecure-requests',
+].join('; ');
+
+// 6. Заголовки безопасности
+const headers = `# Сгенерировано scripts/build.js — не редактировать вручную
+
+# Статика: короткий кеш, чтобы правки появлялись быстро
+/styles.css
+  Cache-Control: public, max-age=600
+
+/script.js
+  Cache-Control: public, max-age=600
+
+/sandbox.js
+  Cache-Control: public, max-age=600
+
+/turnstile.js
+  Cache-Control: public, max-age=600
+
+/favicon.svg
+  Cache-Control: public, max-age=86400
+
+/cases/*
+  Cache-Control: public, max-age=600
+
+# Всё остальное: жёсткая CSP и запрет встраивания
+/*
+  Content-Security-Policy: ${csp}
+  Strict-Transport-Security: max-age=31536000
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  X-XSS-Protection: 0
+  X-Permitted-Cross-Domain-Policies: none
+  X-DNS-Prefetch-Control: off
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: accelerometer=(), autoplay=(), browsing-topics=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  Cache-Control: no-cache
+`;
+
+fs.writeFileSync(path.join(DIST, '_headers'), headers, 'utf8');
+
+// 4. Функции вызываются только для /api/* — статика идёт мимо них
+fs.writeFileSync(
+  path.join(DIST, '_routes.json'),
+  JSON.stringify({ version: 1, include: ['/api/*'], exclude: [] }, null, 2),
+  'utf8',
+);
+
+console.log(`[build] dist готов: ${walk(DIST, '.html').length} HTML, CSP-хешей: ${scriptHashes.size}`);

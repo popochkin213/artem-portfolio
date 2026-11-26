@@ -7,12 +7,13 @@
   <meta name="description" content="Разрабатываю сайты и веб-приложения: быстро, аккуратно, под ключ.">
   <meta name="theme-color" content="#08080c">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="canonical" href="https://artem-portfolio-xywf.onrender.com/">
+  <link rel="canonical" href="https://artem-portfolio.pages.dev/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Артём Соколов">
   <meta property="og:title" content="Артём Соколов — Frontend-разработчик">
   <meta property="og:description" content="Лендинги, сайты-визитки и веб-приложения под ключ. Цены, сроки и примеры работ.">
-  <meta property="og:url" content="https://artem-portfolio-xywf.onrender.com/">
+  <meta property="og:url" content="https://artem-portfolio.pages.dev/">
+  <meta name="turnstile-site-key" content="">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -26,8 +27,8 @@
         <a href="#about" class="nav__link">Обо мне</a>
         <a href="#projects" class="nav__link">Проекты</a>
         <a href="#services" class="nav__link">Услуги</a>
-        <a href="/sandbox.html" class="nav__link">Песочница</a>
-        <a href="/faq.html" class="nav__link">FAQ</a>
+        <a href="/sandbox" class="nav__link">Песочница</a>
+        <a href="/faq" class="nav__link">FAQ</a>
         <a href="#contact" class="nav__link">Контакты</a>
       </nav>
 
@@ -352,19 +353,23 @@
               50% предоплата, остальное после сдачи. Реквизиты пришлю в переписке.
             </span>
             <span class="legal-links">
-              <a href="/privacy.html">Политика конфиденциальности</a>
-              <a href="/terms.html">Пользовательское соглашение</a>
+              <a href="/privacy">Политика конфиденциальности</a>
+              <a href="/terms">Пользовательское соглашение</a>
             </span>
           </fieldset>
 
           <label class="consent" id="consent-label">
             <input type="checkbox" name="consent">
             <span>
-              Согласен с <a href="/privacy.html" target="_blank" rel="noopener">политикой конфиденциальности</a>
-              и <a href="/terms.html" target="_blank" rel="noopener">условиями соглашения</a>,
+              Согласен с <a href="/privacy" target="_blank" rel="noopener">политикой конфиденциальности</a>
+              и <a href="/terms" target="_blank" rel="noopener">условиями соглашения</a>,
               а также на обработку персональных данных.
             </span>
           </label>
+
+          <div class="turnstile-wrap" id="turnstile-wrap" hidden>
+            <div id="turnstile"></div>
+          </div>
 
           <button class="btn btn--full" type="submit">Отправить заявку</button>
 
@@ -380,11 +385,11 @@
       <span>© <span id="year">2026</span> Артём Соколов</span>
       <span class="footer__stats" id="footer-stats"></span>
       <div class="footer__links">
-        <a href="/sandbox.html" class="footer__link">Песочница</a>
-        <a href="/faq.html" class="footer__link">FAQ</a>
+        <a href="/sandbox" class="footer__link">Песочница</a>
+        <a href="/faq" class="footer__link">FAQ</a>
         <a href="https://github.com/popochkin213" class="footer__link" target="_blank" rel="noopener">GitHub</a>
-        <a href="/privacy.html" class="footer__link">Конфиденциальность</a>
-        <a href="/terms.html" class="footer__link">Соглашение</a>
+        <a href="/privacy" class="footer__link">Конфиденциальность</a>
+        <a href="/terms" class="footer__link">Соглашение</a>
       </div>
     </div>
   </footer>
@@ -392,11 +397,12 @@
   <div class="cookie" id="cookie" hidden>
     <p>
       Сайт использует только технические cookies — без рекламы и слежки.
-      Подробнее в <a href="/privacy.html">политике конфиденциальности</a>.
+      Подробнее в <a href="/privacy">политике конфиденциальности</a>.
     </p>
     <button class="btn btn--small" type="button" id="cookie-ok">Понятно</button>
   </div>
 
+  <script src="turnstile.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
