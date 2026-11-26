@@ -737,6 +737,64 @@ img { max-width: 100%; display: block; }
 }
 .form__status--error { color: #f87171; }
 
+.form__alt {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--text-muted);
+}
+.form__alt a { color: var(--accent); }
+
+/* Страница бесплатного аудита */
+.audit__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  align-items: start;
+  margin-top: 30px;
+}
+.audit__info h2 {
+  margin: 0 0 16px;
+  font-size: 22px;
+}
+.audit__list {
+  margin: 0;
+  padding-left: 22px;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+.audit__list li + li { margin-top: 8px; }
+.audit__note {
+  margin: 22px 0 0;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(124, 92, 255, .06);
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Баннер аудита на главной */
+.audit-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px 30px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(124, 92, 255, .12), rgba(34, 211, 238, .06));
+}
+.audit-cta__title { margin: 0 0 8px; font-size: 24px; }
+.audit-cta__text { margin: 0; color: var(--text-muted); line-height: 1.6; max-width: 620px; }
+
+@media (max-width: 760px) {
+  .audit__grid { grid-template-columns: 1fr; gap: 24px; }
+  .audit-cta { flex-direction: column; align-items: flex-start; padding: 22px; }
+}
+
 /* Cloudflare Turnstile — невидимая проверка «я не робот» */
 .turnstile-wrap {
   display: flex;

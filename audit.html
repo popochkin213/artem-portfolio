@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Бесплатный аудит сайта — Артём Соколов</title>
+  <meta name="description" content="Пришлите ссылку на сайт — верну 10 пунктов, что мешает ему приносить заявки. Бесплатно, без продаж и воды.">
+  <meta name="theme-color" content="#08080c">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="canonical" href="https://artem-portfolio-7m4.pages.dev/audit">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Артём Соколов">
+  <meta property="og:title" content="Бесплатный аудит сайта">
+  <meta property="og:description" content="10 пунктов, что мешает сайту приносить заявки. Бесплатно, ответ в течение 24 часов.">
+  <meta property="og:url" content="https://artem-portfolio-7m4.pages.dev/audit">
+  <meta property="og:locale" content="ru_RU">
+  <meta property="og:image" content="https://artem-portfolio-7m4.pages.dev/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Бесплатный аудит сайта">
+  <meta name="twitter:description" content="10 пунктов, что мешает сайту приносить заявки. Бесплатно.">
+  <meta name="twitter:image" content="https://artem-portfolio-7m4.pages.dev/og-image.png">
+  <meta name="turnstile-site-key" content="">
+  <link rel="stylesheet" href="/styles.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "name": "Бесплатный аудит сайта",
+    "serviceType": "Аудит сайта и рекомендации по заявкам",
+    "url": "https://artem-portfolio-7m4.pages.dev/audit",
+    "provider": {
+      "@type": "Person",
+      "name": "Артём Соколов",
+      "jobTitle": "Frontend-разработчик",
+      "url": "https://artem-portfolio-7m4.pages.dev/"
+    },
+    "areaServed": { "@type": "Country", "name": "Россия" },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "RUB",
+      "description": "10 пунктов, что мешает сайту приносить заявки"
+    }
+  }
+  </script>
+</head>
+<body>
+
+  <header class="header">
+    <div class="container header__inner">
+      <a href="/" class="logo">АС<span class="logo__dot">.</span></a>
+      <a href="/" class="btn btn--ghost btn--small">← На главную</a>
+    </div>
+  </header>
+
+  <main class="section">
+    <div class="container container--narrow">
+      <p class="legal__updated">Бесплатно · ответ в течение 24 часов</p>
+      <h1 class="legal__title">Аудит сайта</h1>
+      <p class="section__lead">
+        Пришлите ссылку — посмотрю сайт как клиент и верну 10 пунктов,
+        что мешает ему приносить заявки. Без продаж «сайта за 300 тысяч»
+        и без воды.
+      </p>
+
+      <div class="audit__grid">
+        <div class="audit__info">
+          <h2>Что будет в аудите</h2>
+          <ul class="audit__list">
+            <li>первый экран: понятно ли за 5 секунд, что вы предлагаете;</li>
+            <li>структура и тексты: где клиент теряется и уходит;</li>
+            <li>форма и кнопки: удобно ли оставить заявку с телефона;</li>
+            <li>скорость, мобильная версия и базовое SEO;</li>
+            <li>3 главных исправления, которые дадут больше заявок.</li>
+          </ul>
+          <p class="audit__note">
+            Если сайт в порядке — так и скажу. Мне не нужно ничего продавать
+            любой ценой.
+          </p>
+        </div>
+
+        <form class="form" id="audit-form" novalidate>
+          <div class="hp" aria-hidden="true">
+            <label for="website">Сайт</label>
+            <input id="website" name="website" type="text" tabindex="-1" autocomplete="off">
+          </div>
+
+          <label class="field">
+            <span class="field__label">Имя</span>
+            <input class="field__input" type="text" name="name" placeholder="Как к вам обращаться" autocomplete="name" required>
+            <span class="field__error" data-error-for="name"></span>
+          </label>
+
+          <label class="field">
+            <span class="field__label">Email или Telegram</span>
+            <input class="field__input" type="text" name="contact" placeholder="you@mail.ru или @nickname" autocomplete="email" required>
+            <span class="field__error" data-error-for="contact"></span>
+          </label>
+
+          <label class="field">
+            <span class="field__label">Ссылка на сайт</span>
+            <input class="field__input" type="text" name="site" placeholder="https://example.ru" inputmode="url" required>
+            <span class="field__error" data-error-for="site"></span>
+          </label>
+
+          <label class="field">
+            <span class="field__label">Что важно проверить? <small>(необязательно)</small></span>
+            <textarea class="field__input field__input--area" name="task" rows="3" placeholder="Например: мало заявок с телефона"></textarea>
+          </label>
+
+          <label class="consent" id="audit-consent-label">
+            <input type="checkbox" name="consent">
+            <span>
+              Согласен с <a href="/privacy" target="_blank" rel="noopener">политикой конфиденциальности</a>
+              и <a href="/terms" target="_blank" rel="noopener">условиями соглашения</a>.
+            </span>
+          </label>
+
+          <div class="turnstile-wrap" id="turnstile-wrap" hidden>
+            <div id="turnstile"></div>
+          </div>
+
+          <button class="btn btn--full" type="submit">Получить аудит</button>
+          <p class="form__status" id="audit-status" role="status" aria-live="polite"></p>
+          <p class="form__alt">
+            Не любите формы? <a href="https://t.me/artem_portfolio_bot" target="_blank" rel="noopener">Напишите в Telegram</a>.
+          </p>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <span>© <span id="year">2026</span> Артём Соколов</span>
+      <div class="footer__links">
+        <a href="/" class="footer__link">Главная</a>
+        <a href="/faq" class="footer__link">FAQ</a>
+        <a href="/privacy" class="footer__link">Конфиденциальность</a>
+        <a href="/terms" class="footer__link">Соглашение</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/turnstile.js"></script>
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const form = document.getElementById('audit-form');
+    const statusEl = document.getElementById('audit-status');
+    const consentLabel = document.getElementById('audit-consent-label');
+    const formLoadedAt = Date.now();
+    const BLOCKED_EMAIL_DOMAINS = ['example.com', 'example.org', 'example.net'];
+    const EMAIL_RE = /^[A-Za-z0-9._%+-]{1,64}@((?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,24})$/;
+
+    function isEmail(value) {
+      const match = String(value || '').trim().match(EMAIL_RE);
+      return Boolean(match) && !BLOCKED_EMAIL_DOMAINS.includes(match[1].toLowerCase());
+    }
+
+    function isTelegram(value) {
+      return /^@[a-zA-Z0-9_]{4,32}$/.test(String(value || '').trim());
+    }
+
+    function setError(name, message) {
+      const input = form.elements[name];
+      const errorEl = form.querySelector('[data-error-for="' + name + '"]');
+      const wrapper = input.closest('.field');
+      if (message) {
+        wrapper.classList.add('field--invalid');
+        if (errorEl) errorEl.textContent = message;
+      } else {
+        wrapper.classList.remove('field--invalid');
+        if (errorEl) errorEl.textContent = '';
+      }
+    }
+
+    function showStatus(text, isError = false) {
+      statusEl.textContent = text;
+      statusEl.classList.toggle('form__status--error', isError);
+    }
+
+    function isSiteUrl(value) {
+      try {
+        const url = new URL(String(value || '').trim());
+        return url.protocol === 'http:' || url.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const name = form.elements.name.value.trim();
+      const contact = form.elements.contact.value.trim();
+      const site = form.elements.site.value.trim();
+      const task = form.elements.task.value.trim();
+      let ok = true;
+
+      if (name.length < 2) { setError('name', 'Напишите, как к вам обращаться'); ok = false; }
+      else setError('name', '');
+
+      if (!isEmail(contact) && !isTelegram(contact)) {
+        setError('contact', 'Нужен email или @никнейм в Telegram');
+        ok = false;
+      } else setError('contact', '');
+
+      if (!isSiteUrl(site)) {
+        setError('site', 'Нужна ссылка вида https://example.ru');
+        ok = false;
+      } else setError('site', '');
+
+      const consent = form.elements.consent.checked;
+      consentLabel.classList.toggle('consent--invalid', !consent);
+      if (!consent) ok = false;
+
+      if (!ok) {
+        showStatus('Проверьте поля и поставьте галочку согласия', true);
+        return;
+      }
+
+      const turnstile = window.PortfolioTurnstile;
+      const turnstileFailed = Boolean(turnstile && turnstile.unavailable && turnstile.unavailable());
+      if (turnstile && turnstile.required() && !turnstile.getToken() && !turnstileFailed) {
+        showStatus('Поставьте галочку «Подтвердите, что вы человек» и отправьте ещё раз', true);
+        return;
+      }
+
+      const button = form.querySelector('button[type="submit"]');
+      button.disabled = true;
+      showStatus('Отправляем…');
+
+      try {
+        const response = await fetch('/api/lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            contact,
+            service: 'Бесплатный аудит сайта',
+            payment: 'Не важно',
+            message: 'Аудит сайта: ' + site + (task ? '\nЧто проверить: ' + task : ''),
+            consent: true,
+            website: form.elements.website.value,
+            elapsed: Date.now() - formLoadedAt,
+            turnstileToken: turnstile ? turnstile.getToken() : '',
+          }),
+        });
+
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) {
+          if (response.status === 429) throw new Error('Слишком много заявок. Попробуйте через 10 минут.');
+          if (response.status === 503) throw new Error('Отправка временно недоступна. Напишите в Telegram.');
+          throw new Error(result.error || 'Не получилось отправить');
+        }
+
+        showStatus('Заявка отправлена. Аудит пришлю в течение 24 часов.');
+        form.reset();
+        if (turnstile) turnstile.reset();
+      } catch (error) {
+        console.error(error);
+        showStatus(error instanceof Error && error.message ? error.message : 'Не получилось отправить. Напишите в Telegram.', true);
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    form.elements.consent.addEventListener('change', () => {
+      if (form.elements.consent.checked) consentLabel.classList.remove('consent--invalid');
+    });
+  </script>
+</body>
+</html>
