@@ -49,6 +49,7 @@ const PUBLIC_ITEMS = [
   'terms.html',
   '404.html',
   'favicon.svg',
+  'og-image.png',
   'robots.txt',
   'sitemap.xml',
   'cases',
@@ -103,12 +104,23 @@ for (const extension of ['.html', '.css', '.js', '.xml', '.txt']) {
 //    По умолчанию — бесплатный поддомен pages.dev.
 const SITE_URL = (process.env.SITE_URL || 'https://artem-portfolio-7m4.pages.dev').replace(/\/+$/, '');
 const TURNSTILE_SITE_KEY = (process.env.TURNSTILE_SITE_KEY || '').trim();
+const CF_BEACON_TOKEN = (process.env.CF_BEACON_TOKEN || '').trim();
+const GOOGLE_SITE_VERIFICATION = (process.env.GOOGLE_SITE_VERIFICATION || '').trim();
+const YANDEX_VERIFICATION = (process.env.YANDEX_VERIFICATION || '').trim();
+const today = new Date().toISOString().slice(0, 10);
 
 if (!/^https:\/\/[a-z0-9.-]+$/i.test(SITE_URL)) {
   throw new Error(`[build] некорректный SITE_URL: ${SITE_URL}`);
 }
-if (TURNSTILE_SITE_KEY && !/^[A-Za-z0-9_-]+$/.test(TURNSTILE_SITE_KEY)) {
-  throw new Error('[build] некорректный TURNSTILE_SITE_KEY');
+for (const [name, value] of [
+  ['TURNSTILE_SITE_KEY', TURNSTILE_SITE_KEY],
+  ['CF_BEACON_TOKEN', CF_BEACON_TOKEN],
+  ['GOOGLE_SITE_VERIFICATION', GOOGLE_SITE_VERIFICATION],
+  ['YANDEX_VERIFICATION', YANDEX_VERIFICATION],
+]) {
+  if (value && !/^[A-Za-z0-9_-]+$/.test(value)) {
+    throw new Error(`[build] некорректный ${name}`);
+  }
 }
 
 const textFiles = [
@@ -120,10 +132,34 @@ const textFiles = [
 for (const file of textFiles) {
   let text = fs.readFileSync(file, 'utf8');
   text = text.split('https://artem-portfolio-7m4.pages.dev').join(SITE_URL);
+
   if (TURNSTILE_SITE_KEY) {
     text = text.split('<meta name="turnstile-site-key" content="">')
       .join(`<meta name="turnstile-site-key" content="${TURNSTILE_SITE_KEY}">`);
   }
+
+  if (file.endsWith('sitemap.xml')) {
+    text = text.replace(/<lastmod>[^<]+<\/lastmod>/g, `<lastmod>${today}</lastmod>`);
+  }
+
+  // Подтверждение владения сайтом для поисковиков (если заданы токены).
+  if (path.relative(DIST, file) === 'index.html') {
+    let verification = '';
+    if (GOOGLE_SITE_VERIFICATION) {
+      verification += `\n  <meta name="google-site-verification" content="${GOOGLE_SITE_VERIFICATION}">`;
+    }
+    if (YANDEX_VERIFICATION) {
+      verification += `\n  <meta name="yandex-verification" content="${YANDEX_VERIFICATION}">`;
+    }
+    if (verification) text = text.replace('</head>', `${verification}\n</head>`);
+  }
+
+  // Cloudflare Web Analytics: только если задан токен сайта.
+  if (CF_BEACON_TOKEN && text.includes('</body>')) {
+    const beacon = `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"${CF_BEACON_TOKEN}"}'></script>`;
+    text = text.replace('</body>', `  ${beacon}\n</body>`);
+  }
+
   fs.writeFileSync(file, text, 'utf8');
 }
 
@@ -175,7 +211,12 @@ for (const file of htmlFiles) {
   }
 }
 
-const scriptSrc = ["'self'", 'https://challenges.cloudflare.com', ...scriptHashes].join(' ');
+const scriptSources = ["'self'", 'https://challenges.cloudflare.com', ...scriptHashes];
+const connectSources = ["'self'", 'https://challenges.cloudflare.com'];
+if (CF_BEACON_TOKEN) {
+  scriptSources.push('https://static.cloudflareinsights.com');
+  connectSources.push('https://cloudflareinsights.com');
+}
 
 const csp = [
   "default-src 'self'",
@@ -183,11 +224,11 @@ const csp = [
   "object-src 'none'",
   "form-action 'self'",
   "frame-ancestors 'self'",
-  `script-src ${scriptSrc}`,
+  `script-src ${scriptSources.join(' ')}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self'",
-  "connect-src 'self' https://challenges.cloudflare.com",
+  `connect-src ${connectSources.join(' ')}`,
   "frame-src 'self' https://challenges.cloudflare.com",
   "manifest-src 'self'",
   "media-src 'self'",
@@ -213,6 +254,10 @@ const headers = `# Сгенерировано scripts/build.js — не реда
 
 /favicon.svg
   Cache-Control: public, max-age=86400
+
+/og-image.png
+  Cache-Control: public, max-age=86400
+  Cross-Origin-Resource-Policy: cross-origin
 
 /cases/*
   Cache-Control: public, max-age=600

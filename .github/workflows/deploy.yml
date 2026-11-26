@@ -36,6 +36,9 @@ jobs:
         env:
           SITE_URL: https://artem-portfolio-7m4.pages.dev
           TURNSTILE_SITE_KEY: 0x4AAAAAAGUNSQCMeSBZiDW5
+          CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
+          GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
+          YANDEX_VERIFICATION: ${{ vars.YANDEX_VERIFICATION }}
 
       - name: Deploy
         run: npx wrangler pages deploy dist --project-name artem-portfolio --branch main

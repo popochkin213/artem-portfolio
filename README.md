@@ -104,6 +104,22 @@ Workflow ставит зависимости, собирает `dist/` и выз
 - служебные файлы (`server.js`, `.env`, `.git`, `wrangler.toml`) не попадают
   в `dist/` — сборка копирует только публичные файлы.
 
+## SEO и аналитика
+
+- `og-image.png` (1200×630) — превью для Telegram, VK, Twitter и других соцсетей.
+- Open Graph и Twitter-теги на главной, FAQ, песочнице и кейсах.
+- Микроразметка Schema.org: `Person`, `Service` с ценами и `FAQPage`.
+- `sitemap.xml` обновляет дату `lastmod` при каждой сборке.
+
+**Cloudflare Web Analytics.** Создайте сайт в Cloudflare → Web Analytics,
+скопируйте токен и добавьте переменную репозитория `CF_BEACON_TOKEN`
+(GitHub → Settings → Secrets and variables → Actions → Variables). При сборке
+подключится beacon, а CSP разрешит его автоматически.
+
+**Google Search Console / Яндекс.Вебмастер.** Подтвердите сайт мета-тегом.
+Токены добавьте в переменные `GOOGLE_SITE_VERIFICATION` и
+`YANDEX_VERIFICATION`. После деплоя отправьте `sitemap.xml` в поисковики.
+
 ## Структура
 
 ```
@@ -116,6 +132,7 @@ Workflow ставит зависимости, собирает `dist/` и выз
 ├─ privacy.html            политика конфиденциальности
 ├─ terms.html              пользовательское соглашение
 ├─ 404.html                страница «не найдено»
+├─ og-image.png            превью для соцсетей 1200×630
 ├─ turnstile.js            Cloudflare Turnstile для форм
 ├─ cases/                  три демо-кейса
 ├─ functions/
@@ -126,6 +143,7 @@ Workflow ставит зависимости, собирает `dist/` и выз
 │     ├─ stats.js          GET  /api/stats — статистика
 │     └─ health.js         GET  /api/health — проверка настроек
 ├─ scripts/build.js        сборка dist/ + CSP + _headers
+├─ .github/workflows/deploy.yml  автодеплой
 ├─ wrangler.toml           конфиг Cloudflare Pages
 ├─ server.js               старый локальный сервер (запасной)
 └─ render.yaml             старый конфиг Render (можно удалить)
