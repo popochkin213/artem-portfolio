@@ -110,6 +110,8 @@ Workflow ставит зависимости, собирает `dist/` и выз
 - Open Graph и Twitter-теги на главной, FAQ, песочнице и кейсах.
 - Микроразметка Schema.org: `Person`, `Service` с ценами и `FAQPage`.
 - `sitemap.xml` обновляет дату `lastmod` при каждой сборке.
+- **IndexNow**: после каждого деплоя workflow отправляет URL из sitemap
+  в Яндекс и Bing. Ключ лежит в корне сайта (`5e36....txt`).
 
 **Cloudflare Web Analytics.** Создайте сайт в Cloudflare → Web Analytics,
 скопируйте токен и добавьте переменную репозитория `CF_BEACON_TOKEN`

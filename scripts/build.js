@@ -50,6 +50,7 @@ const PUBLIC_ITEMS = [
   '404.html',
   'favicon.svg',
   'og-image.png',
+  '5e36dd9c2416e3d4d8abd29978bffeb6.txt',
   'robots.txt',
   'sitemap.xml',
   'cases',

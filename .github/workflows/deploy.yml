@@ -45,3 +45,8 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: 122569f81dceb2192192721459d0cba4
+
+      - name: IndexNow
+        run: node scripts/indexnow.js
+        env:
+          SITE_URL: https://artem-portfolio-7m4.pages.dev
