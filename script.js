@@ -1,10 +1,8 @@
 /* ============================================================
    Настройки формы
    ------------------------------------------------------------
-   Сейчас форма работает в демо-режиме: проверяет поля и показывает
-   «отправлено», но никуда не уходит.
-   На 3-й день мы подключим отправку заявок в Telegram — инструкция
-   в README.md, раздел «Как получать заявки в Telegram».
+   Заявка уходит на /api/lead: сервер проверяет данные
+   и пересылает её в Telegram (см. server.js).
    ============================================================ */
 const CONFIG = {
   // Куда отправлять заявку. Обрабатывает server.js и пересылает в Telegram.
@@ -21,6 +19,43 @@ const CONFIG = {
 // Текущий год в подвале — чтобы не обновлять руками
 const yearEl = document.getElementById('year');
 if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+/* ============================================================
+   Мобильное меню
+   ------------------------------------------------------------
+   На узких экранах навигация прячется в выпадающую панель.
+   ============================================================ */
+(() => {
+  const toggle = document.getElementById('nav-toggle');
+  const nav = document.getElementById('site-nav');
+  if (!toggle || !nav) return;
+
+  const close = () => {
+    nav.classList.remove('nav--open');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-label', 'Открыть меню');
+    toggle.textContent = '☰';
+  };
+
+  toggle.addEventListener('click', () => {
+    const open = nav.classList.toggle('nav--open');
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Закрыть меню' : 'Открыть меню');
+    toggle.textContent = open ? '✕' : '☰';
+  });
+
+  nav.addEventListener('click', (event) => {
+    if (event.target.closest('a')) close();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') close();
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!nav.contains(event.target) && !toggle.contains(event.target)) close();
+  });
+})();
 
 // Проверка: похоже ли на email.
 // Тестовые/документационные домены запрещены: они примеряются в формах,
@@ -84,13 +119,11 @@ function validate() {
   const isTgContact = isTelegramUsername(contact);
   const isEmail = isEmailAddress(contact);
 
-  if (isTgContact) {
-    // Реальность @никнейма проверяет сервер (DNS)
-  } else if (isEmail) {
-    // email введён корректно, формат удовлетворительный
-  } else {
+  if (!isTgContact && !isEmail) {
     setError('contact', 'Нужен email или @никнейм в Telegram');
     ok = false;
+  } else {
+    setError('contact', '');
   }
 
   if (!service) {
@@ -123,10 +156,14 @@ form.addEventListener('submit', async (event) => {
   event.preventDefault();
 
   if (!validate()) {
+    const hasFieldErrors = Boolean(form.querySelector('.field--invalid'));
+    const needsConsent = !form.elements.consent.checked;
     showStatus(
-      form.elements.consent.checked
-        ? 'Проверьте поля выше'
-        : 'Поставьте галочку согласия — без неё отправить нельзя',
+      needsConsent && hasFieldErrors
+        ? 'Проверьте поля выше и поставьте галочку согласия'
+        : needsConsent
+          ? 'Поставьте галочку согласия — без неё отправить нельзя'
+          : 'Проверьте поля выше',
       true,
     );
     return;
@@ -159,7 +196,13 @@ form.addEventListener('submit', async (event) => {
     const result = await response.json().catch(() => ({}));
 
     if (!response.ok || !result.ok) {
-      throw new Error(result.error || 'Сервер ответил ошибкой');
+      if (response.status === 429) {
+        throw new Error('Слишком много заявок за короткое время. Попробуйте через 10 минут.');
+      }
+      if (response.status === 503) {
+        throw new Error('Отправка временно недоступна. Напишите мне в Telegram.');
+      }
+      throw new Error(result.error || 'Не получилось отправить заявку');
     }
 
     showStatus('Заявка отправлена! Отвечу в течение суток.');
@@ -167,11 +210,9 @@ form.addEventListener('submit', async (event) => {
   } catch (error) {
     console.error(error);
     showStatus(
-      error.message === 'Домен почты не проверен — проверьте адрес'
+      error instanceof Error && error.message
         ? error.message
-        : error.message === 'Отправка пока не подключена'
-          ? 'Форма ещё не подключена к Telegram.'
-          : 'Не получилось отправить. Напишите мне в Telegram.',
+        : 'Не получилось отправить. Напишите мне в Telegram.',
       true,
     );
   } finally {
@@ -296,7 +337,9 @@ try {
     fetch('/api/stats')
       .then((r) => r.json().catch(() => ({})))
       .then((d) => {
-        if (d && d.ok && d.visits) statsEl.textContent = `Посетители: ${d.visits}`;
+        if (!d || !d.ok) return;
+        const visitors = Number(d.visitors) || 0;
+        if (visitors > 0) statsEl.textContent = `Посетителей: ${visitors}`;
       })
       .catch(() => {});
   }

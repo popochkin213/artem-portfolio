@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Кофейня «Тёплый угол» — кофе и завтраки</title>
 <meta name="description" content="Небольшая кофейня в центре: свежая обжарка, завтраки весь день, бронь столика онлайн.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --cream: #faf6f0;
@@ -37,6 +38,16 @@
   a { color: inherit; }
 
   .wrap { max-width: 1080px; margin: 0 auto; padding: 0 22px; }
+
+  /* Плашка возврата в портфолио */
+  .back-bar { background: #08080c; border-bottom: 1px solid #1e1e2a; }
+  .back-bar__in {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 12px; flex-wrap: wrap; padding-top: 10px; padding-bottom: 10px;
+    font-size: 13px; color: #8f8fa8;
+  }
+  .back-bar a { color: #f2f2f7; text-decoration: none; }
+  .back-bar a:hover { color: #e0b070; }
 
   /* --- шапка --- */
   header {
@@ -163,6 +174,13 @@
 </head>
 <body>
 
+<div class="back-bar">
+  <div class="wrap back-bar__in">
+    <a href="/" target="_top">← Все проекты</a>
+    <span>демо-кейс · Артём Соколов</span>
+  </div>
+</div>
+
 <header>
   <div class="wrap header-in">
     <div class="brand">Тёплый <span>угол</span></div>
@@ -180,7 +198,7 @@
     <div class="wrap hero-grid">
       <div>
         <span class="kicker">Кофейня в центре</span>
-        <h1>Кофе, который<br>будит город</h1>
+        <h1>Кофе, который<br> будит город</h1>
         <p>
           Свежая обжарка каждую неделю, завтраки до самого вечера
           и столик у окна, который никто не заберёт.

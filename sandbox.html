@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Песочница — Артём Соколов: демо в реальном времени</title>
+  <meta name="description" content="Интерактивная песочница: расчёт стоимости сайта со слайдерами и живое превью кейса.">
+  <meta name="theme-color" content="#08080c">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="canonical" href="https://artem-portfolio-xywf.onrender.com/sandbox.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Артём Соколов">
+  <meta property="og:title" content="Песочница — демо в реальном времени">
+  <meta property="og:description" content="Посчитайте стоимость сайта и посмотрите живой кейс в адаптивных размерах.">
+  <meta property="og:url" content="https://artem-portfolio-xywf.onrender.com/sandbox.html">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="container header__inner">
+      <a href="/" class="logo">АС<span class="logo__dot">.</span></a>
+      <a href="/" class="btn btn--ghost btn--small">← На главную</a>
+    </div>
+  </header>
+
+  <main class="sandbox">
+    <div class="container container--narrow">
+
+      <h1 class="legal__title">Песочница</h1>
+      <p class="legal__updated">
+        Маленькие интерактивы: потрогайте цены и посмотрите демо в реальном
+        времени, не дожидаясь обсуждения.
+      </p>
+
+      <!-- Демо 1: расчёт цены в реальном времени -->
+      <section class="sandbox__section" id="price-demo">
+        <h2 class="sandbox__section-title">Цены в реальном времени</h2>
+        <p class="sandbox__lead">
+          Меняйте параметры — итог пересчитывается сразу. Это тот же расчёт,
+          что и в кейсе «Калькулятор стоимости».
+        </p>
+
+        <div class="demo-card" id="price-card">
+          <div class="demo-fields">
+            <div class="demo-field">
+              <label for="demo-type">Тип задачи</label>
+              <select id="demo-type">
+                <option value="landing">Лендинг — от 15 000 ₽</option>
+                <option value="corporate">Сайт-визитка — от 30 000 ₽</option>
+                <option value="shop" selected>Магазин / каталог — от 60 000 ₽</option>
+              </select>
+            </div>
+
+            <div class="demo-field">
+              <label for="demo-pages">Количество страниц: <strong id="pages-val">3</strong></label>
+              <input type="range" id="demo-pages" min="0" max="8" step="1" value="3">
+            </div>
+
+            <div class="demo-field">
+              <span>Опции</span>
+              <div class="demo-opts-row" id="demo-opts-row">
+                <label><input type="checkbox" id="demo-opt-responsive" checked> Адаптив</label>
+                <label><input type="checkbox" id="demo-opt-animation"> Анимации</label>
+                <label><input type="checkbox" id="demo-opt-crm"> Заявки в CRM</label>
+                <label><input type="checkbox" id="demo-opt-seo"> SEO</label>
+                <label><input type="checkbox" id="demo-opt-copy"> Тексты</label>
+              </div>
+            </div>
+
+            <div class="demo-field">
+              <label for="demo-speed">Срочность: <strong id="speed-val">обычные</strong></label>
+              <input type="checkbox" id="demo-speed">
+            </div>
+          </div>
+
+          <div class="demo-result">
+            Итого: <strong id="demo-total">74 000 ₽</strong>
+          </div>
+        </div>
+      </section>
+
+      <!-- Демо 2: короткое превью кейса в реальном времени -->
+      <section class="sandbox__section" id="frame-demo">
+        <h2 class="sandbox__section-title">Песочница кейса: кофейня</h2>
+        <p class="sandbox__lead">
+          Встроенный кейс «Лендинг для кофейни». Двигайте ползунок — и увидите,
+          как меняется вёрстка от телефона до широкого экрана.
+        </p>
+
+        <div class="demo-preview">
+          <div class="demo-frame-wrap">
+            <iframe
+              id="demo-frame"
+              src="/cases/coffee/"
+              title="Кейс: лендинг для кофейни"
+              loading="lazy"></iframe>
+          </div>
+
+          <div class="demo-frame-controls">
+            <div class="demo-field">
+              <label for="demo-width">Ширина: <strong id="frame-width-val">375</strong> px</label>
+              <input type="range" id="demo-width" min="320" max="1100" step="5" value="375">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="sandbox-cta">
+        <a class="btn" href="/#contact">Заказать проект</a>
+        <a class="btn btn--ghost" href="/cases/coffee/">Перейти в кейс →</a>
+      </div>
+
+      <p class="legal__back">
+        <a href="/">← На главную</a>
+      </p>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <span>© <span id="year">2026</span> Артём Соколов</span>
+      <div class="footer__links">
+        <a href="/faq.html" class="footer__link">FAQ</a>
+        <a href="https://github.com/popochkin213" class="footer__link" target="_blank" rel="noopener">GitHub</a>
+        <a href="/privacy.html" class="footer__link">Конфиденциальность</a>
+        <a href="/terms.html" class="footer__link">Соглашение</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+  <script src="/sandbox.js"></script>
+</body>
+</html>

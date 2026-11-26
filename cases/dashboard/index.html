@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Дашборд заказов</title>
 <meta name="description" content="Таблица заказов с поиском, фильтрами, сортировкой и выгрузкой в CSV.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --bg: #0a0a10;
@@ -33,6 +34,15 @@
   }
 
   .page { max-width: 1180px; margin: 0 auto; }
+
+  /* Плашка возврата в портфолио */
+  .back-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 12px; flex-wrap: wrap; margin-bottom: 20px;
+    font-size: 13px; color: var(--muted);
+  }
+  .back-bar a { color: var(--text); text-decoration: none; }
+  .back-bar a:hover { color: var(--accent); }
 
   .top { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 26px; }
   .top h1 { margin: 0 0 4px; font-size: 26px; letter-spacing: -.02em; font-weight: 800; }
@@ -138,6 +148,11 @@
 </head>
 <body>
 <div class="page">
+
+  <div class="back-bar">
+    <a href="/" target="_top">← Все проекты</a>
+    <span>демо-кейс · Артём Соколов</span>
+  </div>
 
   <div class="top">
     <div>

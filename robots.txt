@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://artem-portfolio-xywf.onrender.com/sitemap.xml

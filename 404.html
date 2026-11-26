@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Страница не найдена — Артём Соколов</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#08080c">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="container header__inner">
+      <a href="/" class="logo">АС<span class="logo__dot">.</span></a>
+      <a href="/" class="btn btn--ghost btn--small">← На главную</a>
+    </div>
+  </header>
+
+  <main class="legal">
+    <div class="container container--narrow">
+      <h1 class="legal__title">404 — страница не найдена</h1>
+      <p>
+        Такой страницы нет или она переехала. Возможно, ссылка устарела.
+      </p>
+      <p>
+        Что можно сделать:
+      </p>
+      <ul>
+        <li><a href="/">вернуться на главную</a>;</li>
+        <li>посмотреть <a href="/#projects">проекты</a>;</li>
+        <li>заглянуть в <a href="/sandbox.html">песочницу</a> или <a href="/faq.html">FAQ</a>;</li>
+        <li>написать через <a href="/#contact">форму на главной</a>.</li>
+      </ul>
+
+      <p class="legal__back">
+        <a href="/">← Вернуться на главную</a>
+      </p>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <span>© <span id="year">2026</span> Артём Соколов</span>
+      <div class="footer__links">
+        <a href="/sandbox.html" class="footer__link">Песочница</a>
+        <a href="/faq.html" class="footer__link">FAQ</a>
+        <a href="https://github.com/popochkin213" class="footer__link" target="_blank" rel="noopener">GitHub</a>
+        <a href="/privacy.html" class="footer__link">Конфиденциальность</a>
+        <a href="/terms.html" class="footer__link">Соглашение</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

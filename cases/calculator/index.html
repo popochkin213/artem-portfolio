@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Калькулятор стоимости сайта</title>
 <meta name="description" content="Соберите конфигурацию сайта и сразу увидите стоимость. Расчёт можно отправить разработчику.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --bg: #0b0b11;
@@ -31,6 +32,15 @@
   }
 
   .page { max-width: 980px; margin: 0 auto; }
+
+  /* Плашка возврата в портфолио */
+  .back-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 12px; flex-wrap: wrap; margin-bottom: 20px;
+    font-size: 13px; color: var(--muted);
+  }
+  .back-bar a { color: var(--text); text-decoration: none; }
+  .back-bar a:hover { color: var(--accent); }
 
   .head { text-align: center; margin-bottom: 38px; }
   .head h1 {
@@ -230,6 +240,11 @@
 </head>
 <body>
 <div class="page">
+
+  <div class="back-bar">
+    <a href="/" target="_top">← Все проекты</a>
+    <span>демо-кейс · Артём Соколов</span>
+  </div>
 
   <div class="head">
     <h1>Сколько стоит ваш сайт</h1>

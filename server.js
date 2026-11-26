@@ -47,6 +47,8 @@ const MIME = {
   '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8',
+  '.xml': 'application/xml; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
@@ -58,8 +60,8 @@ const MIME = {
 
 // --- Проверки контактов ----------------------------------------------------
 // Галочка согласия обязательна для любой заявки (152-ФЗ).
-// Если в поле «Email или Telegram» вписали @никнейм — ещё нужна
-// галочка «подтверждаю, что это мой Telegram».
+// Контакт может быть email или @никнеймом Telegram — формат проверяем
+// на клиенте и повторно на сервере.
 function isTelegramUsername(value) {
   return /^@[a-zA-Z0-9_]{4,32}$/.test(String(value || '').trim());
 }
@@ -298,13 +300,55 @@ async function handleLead(req, res) {
 }
 
 // --- Статистика посетителей ------------------------------------------------
-// Счётчик визитов для футера сайта. Первый визит (по visitorId из localStorage)
-// отправляет уведомление в Telegram — чтобы не спамить, по уникальному id.
-const stats = { visits: 0 };
-const statsSeenVisitors = new Map();
+// Счётчик для подвала сайта: просмотры и уникальные посетители.
+// Уникальность определяется по visitorId из localStorage браузера.
+// Значения переживают перезапуск сервера (файл .stats.json, не в git).
+const STATS_FILE = path.join(__dirname, '.stats.json');
+const stats = { views: 0, visitors: new Map() }; // visitorId -> первый визит
+const pingHits = new Map(); // IP -> { start, count }
 
-async function sendStatsToTelegram(visits) {
-  const text = `📈 Новый визит с сайта\nВсего посетителей: ${visits}`;
+try {
+  const saved = JSON.parse(fs.readFileSync(STATS_FILE, 'utf8'));
+  stats.views = Number(saved.views) || 0;
+  for (const [id, at] of Object.entries(saved.visitors || {})) {
+    if (typeof id === 'string' && Number.isFinite(at)) stats.visitors.set(id, at);
+  }
+} catch {
+  // файла ещё нет — начинаем с нуля
+}
+
+let statsSaveTimer = null;
+function saveStats() {
+  if (statsSaveTimer) return;
+  statsSaveTimer = setTimeout(() => {
+    statsSaveTimer = null;
+    const data = { views: stats.views, visitors: Object.fromEntries(stats.visitors) };
+    fs.writeFile(STATS_FILE, JSON.stringify(data), () => {});
+  }, 2000);
+}
+
+function pruneStatsVisitors() {
+  const cutoff = Date.now() - 90 * 24 * 3600 * 1000;
+  for (const [id, at] of stats.visitors) {
+    if (at < cutoff) stats.visitors.delete(id);
+  }
+}
+
+function isPingRateLimited(ip) {
+  const now = Date.now();
+  const windowMs = 10 * 60 * 1000;
+  const max = 120;
+  const entry = pingHits.get(ip);
+  if (!entry || now - entry.start > windowMs) {
+    pingHits.set(ip, { start: now, count: 1 });
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > max;
+}
+
+async function sendStatsToTelegram(visitors, views) {
+  const text = `📈 Новый посетитель сайта\nВсего посетителей: ${visitors}\nПросмотров: ${views}`;
   await fetch(
     `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
     {
@@ -321,62 +365,108 @@ async function sendStatsToTelegram(visits) {
 }
 
 async function handlePing(req, res) {
+  const ip = req.socket.remoteAddress || 'unknown';
+  if (isPingRateLimited(ip)) {
+    return json(res, 429, { ok: false, error: 'Слишком часто' });
+  }
+
   let data = {};
   try {
     data = JSON.parse(await readBody(req));
   } catch {
-    // пусто или мусор — всё равно считаем
+    // пусто или мусор — всё равно считаем просмотр
   }
 
   const visitorId = String(data.visitorId || '').slice(0, 80);
-  stats.visits += 1;
+  stats.views += 1;
 
-  // Одно уведомление в Telegram на каждого нового визитора
-  if (visitorId && !statsSeenVisitors.has(visitorId)) {
-    statsSeenVisitors.set(visitorId, Date.now());
-    // Чистим записи старше 30 дней
-    const cutoff = Date.now() - 30 * 24 * 3600 * 1000;
-    for (const [id, at] of statsSeenVisitors) {
-      if (at < cutoff) statsSeenVisitors.delete(id);
-    }
-    await sendStatsToTelegram(stats.visits).catch(() => {});
+  // Одно уведомление в Telegram на каждого нового посетителя
+  if (visitorId && !stats.visitors.has(visitorId)) {
+    stats.visitors.set(visitorId, Date.now());
+    pruneStatsVisitors();
+    await sendStatsToTelegram(stats.visitors.size, stats.views).catch(() => {});
   }
 
-  return json(res, 200, { ok: true, visits: stats.visits });
+  saveStats();
+
+  return json(res, 200, {
+    ok: true,
+    views: stats.views,
+    visitors: stats.visitors.size,
+  });
 }
 
 // --- Статические файлы ---------------------------------------------------
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'X-Frame-Options': 'SAMEORIGIN',
+};
+
+function sendNotFound(req, res) {
+  fs.readFile(path.join(ROOT, '404.html'), (error, content) => {
+    if (error) {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8', ...SECURITY_HEADERS });
+      res.end('Страница не найдена');
+      return;
+    }
+    res.writeHead(404, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Length': content.length,
+      'Cache-Control': 'no-cache',
+      ...SECURITY_HEADERS,
+    });
+    res.end(req.method === 'HEAD' ? undefined : content);
+  });
+}
+
 function serveStatic(req, res, pathname) {
-  let relative = pathname === '/' ? 'index.html' : decodeURIComponent(pathname.slice(1));
+  let relative;
+  try {
+    relative = pathname === '/' ? 'index.html' : decodeURIComponent(pathname.slice(1));
+  } catch {
+    return sendNotFound(req, res);
+  }
 
   // /cases/coffee/ -> /cases/coffee/index.html
   if (relative.endsWith('/')) relative += 'index.html';
 
-  const filePath = path.join(ROOT, relative);
+  const filePath = path.resolve(ROOT, relative);
 
   // Защита от выхода за пределы папки проекта (../../etc/passwd)
-  if (!filePath.startsWith(ROOT)) {
-    res.writeHead(403).end('Forbidden');
+  const rel = path.relative(ROOT, filePath);
+  if (rel.startsWith('..') || path.isAbsolute(rel)) {
+    res.writeHead(403, { ...SECURITY_HEADERS }).end('Forbidden');
     return;
   }
 
-  // Не отдаём служебные файлы
-  const base = path.basename(filePath);
-  if (base.startsWith('.') || base === 'server.js' || base === 'package.json') {
-    res.writeHead(404).end('Not found');
-    return;
+  const segments = rel.split(path.sep);
+  const base = segments[segments.length - 1];
+
+  // Служебные и скрытые файлы (.env, .git, .stats.json) наружу не отдаём
+  if (
+    segments.some((segment) => segment.startsWith('.')) ||
+    base === 'server.js' ||
+    base === 'package.json' ||
+    base === 'package-lock.json'
+  ) {
+    return sendNotFound(req, res);
   }
 
   fs.readFile(filePath, (error, content) => {
-    if (error) {
-      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-      res.end('Страница не найдена');
-      return;
-    }
+    if (error) return sendNotFound(req, res);
 
-    const type = MIME[path.extname(filePath).toLowerCase()] || 'application/octet-stream';
-    res.writeHead(200, { 'Content-Type': type });
-    res.end(content);
+    const ext = path.extname(filePath).toLowerCase();
+    const type = MIME[ext] || 'application/octet-stream';
+    const isHtml = ext === '.html';
+
+    res.writeHead(200, {
+      'Content-Type': type,
+      'Content-Length': content.length,
+      'Cache-Control': isHtml ? 'no-cache' : 'public, max-age=3600',
+      ...SECURITY_HEADERS,
+    });
+    res.end(req.method === 'HEAD' ? undefined : content);
   });
 }
 
@@ -397,7 +487,11 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/stats') {
-    return json(res, 200, { ok: true, visits: stats.visits });
+    return json(res, 200, {
+      ok: true,
+      views: stats.views,
+      visitors: stats.visitors.size,
+    });
   }
 
   if (req.method !== 'GET' && req.method !== 'HEAD') {
