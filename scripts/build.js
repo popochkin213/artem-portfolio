@@ -237,6 +237,26 @@ const csp = [
 ].join('; ');
 
 // 7. Заголовки безопасности
+const htmlRoutes = [
+  '/',
+  '/index.html',
+  '/faq',
+  '/faq.html',
+  '/sandbox',
+  '/sandbox.html',
+  '/privacy',
+  '/privacy.html',
+  '/terms',
+  '/terms.html',
+  '/404.html',
+  '/cases/coffee/',
+  '/cases/calculator/',
+  '/cases/dashboard/',
+];
+const htmlCacheRules = htmlRoutes
+  .map((route) => `${route}\n  Cache-Control: no-cache`)
+  .join('\n\n');
+
 const headers = `# Сгенерировано scripts/build.js — не редактировать вручную
 
 # Статика: короткий кеш, чтобы правки появлялись быстро
@@ -257,12 +277,17 @@ const headers = `# Сгенерировано scripts/build.js — не реда
 
 /og-image.png
   Cache-Control: public, max-age=86400
-  Cross-Origin-Resource-Policy: cross-origin
 
-/cases/*
+/robots.txt
   Cache-Control: public, max-age=600
 
-# Всё остальное: жёсткая CSP и запрет встраивания
+/sitemap.xml
+  Cache-Control: public, max-age=600
+
+# HTML: браузер всегда проверяет свежесть
+${htmlCacheRules}
+
+# Жёсткая CSP и запрет встраивания
 /*
   Content-Security-Policy: ${csp}
   Strict-Transport-Security: max-age=31536000
@@ -275,7 +300,6 @@ const headers = `# Сгенерировано scripts/build.js — не реда
   Permissions-Policy: accelerometer=(), autoplay=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Resource-Policy: same-origin
-  Cache-Control: no-cache
 `;
 
 fs.writeFileSync(path.join(DIST, '_headers'), headers, 'utf8');
