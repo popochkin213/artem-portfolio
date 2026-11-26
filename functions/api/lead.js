@@ -52,9 +52,19 @@ export async function onRequest(context) {
     return json({ ok: true });
   }
 
-  const turnstile = await verifyTurnstile(env, String(data.turnstileToken || ''), request.headers.get('CF-Connecting-IP'));
-  if (!turnstile.ok) {
-    return json({ ok: false, error: turnstile.error }, 403);
+  const turnstileToken = String(data.turnstileToken || '');
+  if (turnstileToken) {
+    const turnstile = await verifyTurnstile(env, turnstileToken, request.headers.get('CF-Connecting-IP'));
+    if (!turnstile.ok) {
+      return json({ ok: false, error: turnstile.error }, 403);
+    }
+  } else if (env.TURNSTILE_SECRET) {
+    // Виджет не загрузился или сломался (VPN, блокировщик, старый браузер).
+    // Не теряем живого клиента, но разрешаем только одну такую заявку
+    // с IP за 10 минут. Токен с ошибкой по-прежнему блокируется выше.
+    if (!(await allowRequest(env, `lead-nocap:${ipKey}`, 1, 10 * 60))) {
+      return json({ ok: false, error: 'Слишком много попыток. Попробуйте позже' }, 429);
+    }
   }
 
   if (name.length < 2) {

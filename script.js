@@ -169,10 +169,13 @@ form.addEventListener('submit', async (event) => {
     return;
   }
 
-  // Cloudflare Turnstile (если ключ задан на странице)
+  // Cloudflare Turnstile (если ключ задан на странице).
+  // Если проверка сломалась — не блокируем отправку: сервер применит
+  // более строгий лимит, а остальные проверки останутся.
   const turnstile = window.PortfolioTurnstile;
-  if (turnstile && turnstile.required() && !turnstile.getToken()) {
-    showStatus('Подтвердите, что вы человек, и отправьте ещё раз', true);
+  const turnstileFailed = Boolean(turnstile && turnstile.unavailable && turnstile.unavailable());
+  if (turnstile && turnstile.required() && !turnstile.getToken() && !turnstileFailed) {
+    showStatus('Поставьте галочку «Подтвердите, что вы человек» и отправьте ещё раз', true);
     return;
   }
 

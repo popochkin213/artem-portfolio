@@ -740,13 +740,35 @@ img { max-width: 100%; display: block; }
 /* Cloudflare Turnstile — невидимая проверка «я не робот» */
 .turnstile-wrap {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   width: 100%;
   margin: 4px 0 14px;
   min-height: 66px;
 }
 .turnstile-wrap[hidden] { display: none; }
 .turnstile-wrap > div { max-width: 100%; }
+.turnstile-wrap--failed #turnstile { display: none; }
+.turnstile-note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+  color: #fbbf24;
+}
+.turnstile-note[hidden] { display: none; }
+.turnstile-skip {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #fbbf24;
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.turnstile-skip[hidden] { display: none; }
 
 /* Ловушка для ботов — не видна человеку */
 .hp {

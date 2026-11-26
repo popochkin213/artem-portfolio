@@ -127,9 +127,30 @@ for (const file of textFiles) {
   fs.writeFileSync(file, text, 'utf8');
 }
 
-// 4. Проверки перед публикацией: никаких inline-обработчиков и javascript:
-//    (они несовместимы с жёсткой CSP и обычно означают XSS-риск).
+// 4. Версии CSS/JS в ссылках. После правки файла меняется хеш, поэтому
+//    браузер не возьмёт старую версию из 10-минутного кеша.
 const htmlFiles = walk(DIST, '.html');
+const assetVersions = new Map();
+
+for (const asset of ['styles.css', 'script.js', 'sandbox.js', 'turnstile.js']) {
+  const file = path.join(DIST, asset);
+  if (!fs.existsSync(file)) continue;
+  const hash = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex').slice(0, 10);
+  assetVersions.set(asset, hash);
+}
+
+for (const file of htmlFiles) {
+  let html = fs.readFileSync(file, 'utf8');
+  for (const [asset, version] of assetVersions) {
+    const escaped = asset.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = new RegExp(`((?:href|src)=["'][^"']*/?)${escaped}(?:\\?[^"']*)?(["'])`, 'g');
+    html = html.replace(pattern, `$1${asset}?v=${version}$2`);
+  }
+  fs.writeFileSync(file, html, 'utf8');
+}
+
+// 5. Проверки перед публикацией: никаких inline-обработчиков и javascript:
+//    (они несовместимы с жёсткой CSP и обычно означают XSS-риск).
 for (const file of htmlFiles) {
   const html = fs.readFileSync(file, 'utf8');
   const relative = path.relative(DIST, file);
@@ -142,7 +163,7 @@ for (const file of htmlFiles) {
   }
 }
 
-// 5. Хеши inline-скриптов для CSP
+// 6. Хеши inline-скриптов для CSP
 const scriptHashes = new Set();
 for (const file of htmlFiles) {
   const html = fs.readFileSync(file, 'utf8');
@@ -174,7 +195,7 @@ const csp = [
   'upgrade-insecure-requests',
 ].join('; ');
 
-// 6. Заголовки безопасности
+// 7. Заголовки безопасности
 const headers = `# Сгенерировано scripts/build.js — не редактировать вручную
 
 # Статика: короткий кеш, чтобы правки появлялись быстро
@@ -206,7 +227,7 @@ const headers = `# Сгенерировано scripts/build.js — не реда
   X-Permitted-Cross-Domain-Policies: none
   X-DNS-Prefetch-Control: off
   Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: accelerometer=(), autoplay=(), browsing-topics=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()
+  Permissions-Policy: accelerometer=(), autoplay=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Resource-Policy: same-origin
   Cache-Control: no-cache
@@ -214,14 +235,14 @@ const headers = `# Сгенерировано scripts/build.js — не реда
 
 fs.writeFileSync(path.join(DIST, '_headers'), headers, 'utf8');
 
-// 7. Функции вызываются только для /api/* — статика идёт мимо них
+// 8. Функции вызываются только для /api/* — статика идёт мимо них
 fs.writeFileSync(
   path.join(DIST, '_routes.json'),
   JSON.stringify({ version: 1, include: ['/api/*'], exclude: [] }, null, 2),
   'utf8',
 );
 
-// 8. Браузеры по привычке просят /favicon.ico — отправляем на SVG.
+// 9. Браузеры по привычке просят /favicon.ico — отправляем на SVG.
 fs.writeFileSync(path.join(DIST, '_redirects'), '/favicon.ico /favicon.svg 302\n', 'utf8');
 
 console.log(`[build] dist готов: ${walk(DIST, '.html').length} HTML, CSP-хешей: ${scriptHashes.size}`);
