@@ -214,11 +214,14 @@ const headers = `# Сгенерировано scripts/build.js — не реда
 
 fs.writeFileSync(path.join(DIST, '_headers'), headers, 'utf8');
 
-// 4. Функции вызываются только для /api/* — статика идёт мимо них
+// 7. Функции вызываются только для /api/* — статика идёт мимо них
 fs.writeFileSync(
   path.join(DIST, '_routes.json'),
   JSON.stringify({ version: 1, include: ['/api/*'], exclude: [] }, null, 2),
   'utf8',
 );
+
+// 8. Браузеры по привычке просят /favicon.ico — отправляем на SVG.
+fs.writeFileSync(path.join(DIST, '_redirects'), '/favicon.ico /favicon.svg 302\n', 'utf8');
 
 console.log(`[build] dist готов: ${walk(DIST, '.html').length} HTML, CSP-хешей: ${scriptHashes.size}`);

@@ -741,10 +741,12 @@ img { max-width: 100%; display: block; }
 .turnstile-wrap {
   display: flex;
   justify-content: center;
+  width: 100%;
   margin: 4px 0 14px;
   min-height: 66px;
 }
 .turnstile-wrap[hidden] { display: none; }
+.turnstile-wrap > div { max-width: 100%; }
 
 /* Ловушка для ботов — не видна человеку */
 .hp {

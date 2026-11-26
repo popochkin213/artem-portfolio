@@ -39,6 +39,8 @@
       sitekey: siteKey,
       theme: 'dark',
       language: 'ru',
+      // На телефонах обычный виджет 300 px шире формы — берём компактный.
+      size: window.matchMedia('(max-width: 420px)').matches ? 'compact' : 'normal',
       callback: (value) => {
         token = value;
       },

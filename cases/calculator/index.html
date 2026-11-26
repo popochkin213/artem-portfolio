@@ -234,10 +234,12 @@
   .turnstile-wrap {
     display: flex;
     justify-content: center;
+    width: 100%;
     margin: 4px 0 12px;
     min-height: 66px;
   }
   .turnstile-wrap[hidden] { display: none; }
+  .turnstile-wrap > div { max-width: 100%; }
 
   @media (max-width: 820px) {
     .layout { grid-template-columns: 1fr; }
