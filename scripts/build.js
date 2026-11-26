@@ -15,6 +15,28 @@ const crypto = require('node:crypto');
 const ROOT = path.resolve(__dirname, '..');
 const DIST = path.join(ROOT, 'dist');
 
+// Локальные .env и .dev.vars (в git не попадают) — чтобы SITE_URL и ключ
+// Turnstile подхватывались без ручного ввода. На Cloudflare эти переменные
+// задаются в настройках проекта и имеют приоритет.
+function loadLocalEnv() {
+  for (const name of ['.env', '.dev.vars']) {
+    const file = path.join(ROOT, name);
+    if (!fs.existsSync(file)) continue;
+    for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
+      const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
+      if (!match) continue;
+      const key = match[1];
+      let value = match[2].trim();
+      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1);
+      }
+      if (!(key in process.env)) process.env[key] = value;
+    }
+  }
+}
+
+loadLocalEnv();
+
 const PUBLIC_ITEMS = [
   'index.html',
   'styles.css',
@@ -79,7 +101,7 @@ for (const extension of ['.html', '.css', '.js', '.xml', '.txt']) {
 
 // 3. Адрес сайта и ключ Turnstile можно задать переменными окружения.
 //    По умолчанию — бесплатный поддомен pages.dev.
-const SITE_URL = (process.env.SITE_URL || 'https://artem-portfolio.pages.dev').replace(/\/+$/, '');
+const SITE_URL = (process.env.SITE_URL || 'https://artem-portfolio-7m4.pages.dev').replace(/\/+$/, '');
 const TURNSTILE_SITE_KEY = (process.env.TURNSTILE_SITE_KEY || '').trim();
 
 if (!/^https:\/\/[a-z0-9.-]+$/i.test(SITE_URL)) {
@@ -97,7 +119,7 @@ const textFiles = [
 
 for (const file of textFiles) {
   let text = fs.readFileSync(file, 'utf8');
-  text = text.split('https://artem-portfolio.pages.dev').join(SITE_URL);
+  text = text.split('https://artem-portfolio-7m4.pages.dev').join(SITE_URL);
   if (TURNSTILE_SITE_KEY) {
     text = text.split('<meta name="turnstile-site-key" content="">')
       .join(`<meta name="turnstile-site-key" content="${TURNSTILE_SITE_KEY}">`);

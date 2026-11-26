@@ -1,6 +1,6 @@
 # Сайт-визитка на Cloudflare Pages
 
-**Живая версия:** https://artem-portfolio.pages.dev
+**Живая версия:** https://artem-portfolio-7m4.pages.dev
 
 Тёмный адаптивный лендинг: услуги, цены, кейсы, песочница, форма заявки.
 Заявки приходят в Telegram. Статика раздаётся с CDN, форма и счётчик работают
@@ -44,6 +44,7 @@ id = "ВАШ_ID"
 npx wrangler pages secret put TELEGRAM_BOT_TOKEN --project-name artem-portfolio
 npx wrangler pages secret put TELEGRAM_CHAT_ID   --project-name artem-portfolio
 npx wrangler pages secret put RATE_SALT          --project-name artem-portfolio
+npx wrangler pages secret put TURNSTILE_SECRET   --project-name artem-portfolio
 ```
 
 Дальше каждый деплой — одна команда:
@@ -61,8 +62,8 @@ npm run deploy
 |---|---|
 | Build command | `npm run build` |
 | Build output directory | `dist` |
-| `SITE_URL` | `https://artem-portfolio.pages.dev` (или свой домен) |
-| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `RATE_SALT` | secrets в настройках проекта |
+| `SITE_URL` | `https://artem-portfolio-7m4.pages.dev` (или свой домен) |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `RATE_SALT`, `TURNSTILE_SECRET` | secrets в настройках проекта |
 | KV binding | `STATS` → созданный namespace |
 
 Переменная `SITE_URL` подставляет адрес в канонические ссылки, `og:url`,
@@ -76,7 +77,7 @@ npm run deploy
 - DDoS-защита и CDN по умолчанию;
 - WAF и Bot Fight Mode — включить в панели Cloudflare;
 - HTTPS + HSTS;
-- Turnstile — невидимая проверка формы от ботов (по желанию);
+- Turnstile — проверка формы от ботов (включена, режим managed);
 - Cloudflare Access — если нужно закрыть сайт паролем.
 
 На уровне сайта:

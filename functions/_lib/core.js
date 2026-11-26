@@ -31,7 +31,7 @@ export function isTelegramUsername(value) {
 }
 
 // Строгая проверка: только безопасные символы, без кавычек и угловых скобок.
-const EMAIL_RE = /^[A-Za-z0-9._%+-]{1,64}@([A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,24}$/;
+const EMAIL_RE = /^[A-Za-z0-9._%+-]{1,64}@((?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,24})$/;
 
 export function emailDomain(value) {
   const match = String(value || '').trim().match(EMAIL_RE);
@@ -117,23 +117,40 @@ export async function isEmailDomainUsable(contact) {
   if (!domain) return false;
   if (BLOCKED_EMAIL_DOMAINS.includes(domain)) return false;
 
+  // Возвращает true (запись есть), false (записи нет) или null (сбой сети).
   const lookup = async (type) => {
-    try {
-      const url = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=${type}`;
-      const response = await fetch(url, {
-        headers: { accept: 'application/dns-json' },
-        signal: AbortSignal.timeout(4000),
-      });
-      const data = await response.json();
-      return data.Status === 0 && Array.isArray(data.Answer) && data.Answer.length > 0;
-    } catch {
-      return false;
+    const urls = [
+      `https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=${type}`,
+      `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=${type}`,
+    ];
+
+    for (const url of urls) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 4000);
+      try {
+        const response = await fetch(url, {
+          headers: { accept: 'application/dns-json' },
+          signal: controller.signal,
+        });
+        if (!response.ok) continue;
+        const data = await response.json();
+        if (data.Status === 0) {
+          return Array.isArray(data.Answer) && data.Answer.length > 0;
+        }
+      } catch (error) {
+        console.error('[dns]', type, error.message);
+      } finally {
+        clearTimeout(timer);
+      }
     }
+    return null;
   };
 
-  if (await lookup('MX')) return true;
-  if (await lookup('A')) return true;
-  return lookup('AAAA');
+  for (const type of ['MX', 'A', 'AAAA']) {
+    const result = await lookup(type);
+    if (result === true) return true;
+  }
+  return false;
 }
 
 /** Контакт клиента: @ник → t.me-ссылка, email → mailto. */

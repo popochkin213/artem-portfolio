@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /api/
 
-Sitemap: https://artem-portfolio.pages.dev/sitemap.xml
+Sitemap: https://artem-portfolio-7m4.pages.dev/sitemap.xml

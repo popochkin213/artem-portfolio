@@ -61,7 +61,7 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
 // Тестовые/документационные домены запрещены: они примеряются в формах,
 // а не реальные почтовые ящики.
 const BLOCKED_EMAIL_DOMAINS = ['example.com', 'example.org', 'example.net'];
-const EMAIL_RE = /^[A-Za-z0-9._%+-]{1,64}@([A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,24}$/;
+const EMAIL_RE = /^[A-Za-z0-9._%+-]{1,64}@((?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,24})$/;
 
 function isEmailAddress(value) {
   const match = String(value || '').trim().match(EMAIL_RE);

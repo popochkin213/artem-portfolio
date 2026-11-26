@@ -5,6 +5,7 @@ name = "artem-portfolio"
 compatibility_date = "2026-11-26"
 pages_build_output_dir = "dist"
 
-# KV для счётчика посетителей подключается в панели Cloudflare:
-# Workers & Pages → KV → создать namespace → привязать как STATS.
-# Без KV счётчик работает в памяти и сбрасывается.
+# KV для счётчика посетителей.
+[[kv_namespaces]]
+binding = "STATS"
+id = "1e06af6844e04603a1ac583aa11809df"
