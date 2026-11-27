@@ -10,6 +10,8 @@
 .snow-layer {
   position: fixed;
   inset: 0;
+  width: 100%;
+  height: 100%;
   z-index: 90;
   pointer-events: none;
   opacity: 0;
@@ -170,13 +172,6 @@ html[data-theme="light"] .vibe-panel {
 
 .vibe-panel__row--volume { cursor: default; }
 
-/* Трек недоступен, пока музыка выключена */
-.vibe-panel__row--disabled {
-  opacity: .42;
-  transition: opacity .2s ease;
-}
-.vibe-panel__row--disabled .vibe-select { cursor: not-allowed; }
-
 .vibe-seg {
   display: inline-flex;
   padding: 3px;
@@ -246,39 +241,6 @@ html[data-theme="light"] .vibe-panel {
   min-width: 90px;
   accent-color: var(--vp-accent);
   cursor: pointer;
-}
-
-.vibe-select {
-  max-width: 150px;
-  min-width: 118px;
-  padding: 7px 30px 7px 11px;
-  border: 1px solid var(--vp-line);
-  border-radius: 9px;
-  background: var(--vp-switch);
-  background-image: linear-gradient(45deg, transparent 50%, var(--vp-muted) 50%),
-                    linear-gradient(135deg, var(--vp-muted) 50%, transparent 50%);
-  background-position: calc(100% - 14px) calc(50% + 1px), calc(100% - 9px) calc(50% + 1px);
-  background-size: 5px 5px, 5px 5px;
-  background-repeat: no-repeat;
-  color: var(--vp-fg);
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-}
-.vibe-select:focus-visible {
-  outline: 2px solid var(--vp-accent);
-  outline-offset: 2px;
-}
-.vibe-select option {
-  background: #14141c;
-  color: #f0f0f5;
-}
-html[data-theme="light"] .vibe-select option {
-  background: #fff;
-  color: #14141f;
 }
 
 .vibe-panel__hint {

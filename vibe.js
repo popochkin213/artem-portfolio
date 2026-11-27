@@ -23,7 +23,6 @@
     snow: 'vibe-snow',
     sound: 'vibe-sound',
     volume: 'vibe-volume',
-    track: 'vibe-track',
   };
 
   const store = {
@@ -127,7 +126,6 @@
     let running = false; // анимация идёт, в том числе затухание
     let enabled = false; // снег включён человеком
     let light = Theme.get() === 'light';
-    let prevScroll = 0;
     let stopTimer = 0;
 
     const DARK_COLORS = ['rgba(255, 255, 255, ALPHA)', 'rgba(246, 250, 255, ALPHA)'];
@@ -135,29 +133,30 @@
 
     const palette = () => (light ? LIGHT_COLORS : DARK_COLORS);
     const paint = (template, alpha) => template.replace('ALPHA', alpha.toFixed(2));
-    const vw = () => window.innerWidth;
-    const vh = () => window.innerHeight;
+    const vw = () => (canvas && canvas.clientWidth) || window.innerWidth;
+    const vh = () => (canvas && canvas.clientHeight) || window.innerHeight;
 
     function makeFlake(screenY) {
-      const radius = 1.5 + Math.random() * 3.6;
-      const alpha = light ? 0.3 + Math.random() * 0.35 : 0.55 + Math.random() * 0.45;
+      const radius = 1.2 + Math.random() * 2.8;
+      const alpha = light ? 0.35 + Math.random() * 0.35 : 0.5 + Math.random() * 0.5;
       const y = typeof screenY === 'number' ? screenY : Math.random() * vh();
 
       return {
         x: Math.random() * vw(),
         y: window.scrollY + y,
         r: radius,
-        vy: (16 + Math.random() * 32 + radius * 6) * (reduceMotion.matches ? 0.6 : 1),
-        amp: (6 + Math.random() * 22) * (reduceMotion.matches ? 0.35 : 1),
+        vy: (14 + Math.random() * 30 + radius * 5) * (reduceMotion.matches ? 0.6 : 1),
+        amp: (6 + Math.random() * 20) * (reduceMotion.matches ? 0.35 : 1),
         phase: Math.random() * Math.PI * 2,
         speed: 0.25 + Math.random() * 0.6,
+        twinklePhase: Math.random() * Math.PI * 2,
         alpha,
         color: paint(palette()[Math.random() < 0.7 ? 0 : 1], alpha),
       };
     }
 
     function targetCount() {
-      const base = Math.min(420, Math.max(80, vw() / 5));
+      const base = Math.min(340, Math.max(70, vw() / 5.5));
       return Math.round(base * (reduceMotion.matches ? 0.65 : 1));
     }
 
@@ -192,6 +191,7 @@
             phase,
             speed,
             alpha,
+            twinklePhase: Math.random() * Math.PI * 2,
             color: paint(colors[index % 5 === 0 ? 1 : 0], alpha),
           };
         });
@@ -225,12 +225,12 @@
     function resize() {
       if (!canvas) return;
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const w = vw();
-      const h = vh();
+      // Размер берём у самого элемента: так пиксели канваса всегда
+      // совпадают с CSS-размером и снежинки остаются круглыми.
+      const w = canvas.clientWidth || window.innerWidth;
+      const h = canvas.clientHeight || window.innerHeight;
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
@@ -243,10 +243,13 @@
       const w = vw();
       const h = vh();
       const scroll = window.scrollY;
-      const jump = Math.abs(scroll - prevScroll);
-      prevScroll = scroll;
+      const period = h + 60;
 
-      ctx.clearRect(0, 0, w, h);
+      // Чистим в реальных пикселях, чтобы на краях не оставалось полос
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
 
       for (const flake of flakes) {
         flake.y += flake.vy * dt;
@@ -256,27 +259,18 @@
         if (flake.x < -12) flake.x = w + 12;
         else if (flake.x > w + 12) flake.x = -12;
 
-        const screenY = flake.y - scroll;
+        // Бесконечное поле: позиция сворачивается по кругу, поэтому
+        // снежинки не сбиваются в полосы у края экрана
+        let rel = flake.y - scroll;
+        rel = ((((rel + 30) % period) + period) % period) - 30;
+        flake.y = scroll + rel;
 
-        // Уехала за нижний край — возвращаем сверху.
-        if (screenY > h + 24) {
-          flake.y = scroll - 10 - Math.random() * 40;
-          flake.x = Math.random() * w;
-        } else if (screenY < -24) {
-          // Прокрутили мимо: при быстром рывке рассыпаем по экрану,
-          // при плавном — возвращаем снизу, как новую порцию снега.
-          const y = jump > h * 0.4 ? Math.random() * h : h + 10 + Math.random() * 40;
-          flake.y = scroll + y;
-          flake.x = Math.random() * w;
-        }
+        const twinkle = 0.82 + 0.18 * Math.sin(flake.phase * 1.7 + flake.twinklePhase);
 
-        const drawY = flake.y - scroll;
-        if (drawY < -30 || drawY > h + 30) continue;
-
-        ctx.globalAlpha = flake.alpha;
+        ctx.globalAlpha = Math.min(1, flake.alpha * twinkle);
         ctx.fillStyle = flake.color;
         ctx.beginPath();
-        ctx.arc(flake.x, drawY, flake.r, 0, Math.PI * 2);
+        ctx.arc(flake.x, rel, flake.r, 0, Math.PI * 2);
         ctx.fill();
       }
 
@@ -306,7 +300,6 @@
         flakes = saved && saved.length ? saved.slice(0, count) : [];
         while (flakes.length < count) flakes.push(makeFlake());
 
-        prevScroll = window.scrollY;
         running = true;
         last = performance.now();
         raf = window.requestAnimationFrame(frame);
@@ -389,56 +382,23 @@
           { bass: 98.0, notes: [196.0, 246.94, 293.66, 329.63] }, // G6
           { bass: 73.42, notes: [146.83, 174.61, 220.0, 329.63] }, // Dm9
         ],
-        chordEvery: 7,
-        padLength: 11,
-        padGain: 0.085,
-        bassGain: 0.13,
-        punch: 0,
-        filterHz: 1500,
-        bells: [880.0, 1046.5, 1318.5, 1568.0, 1975.5],
-        bellEvery: [9, 18],
-        bellDecay: 4.5,
-        bellGain: 0.05,
-      },
-      bass: {
-        label: 'Басс',
-        chords: [
-          { bass: 73.42, notes: [146.83, 174.61, 220.0, 261.63] }, // Dm7
-          { bass: 58.27, notes: [116.54, 146.83, 174.61, 220.0] }, // Bbmaj7
-          { bass: 55.0, notes: [110.0, 138.59, 164.81, 196.0] }, // A7
-          { bass: 49.0, notes: [98.0, 116.54, 146.83, 174.61] }, // Gm7
-        ],
         chordEvery: 8,
         padLength: 12,
-        padGain: 0.065,
-        bassGain: 0.26,
-        punch: 0.09,
-        filterHz: 850,
-        bells: [440.0, 523.25, 659.25],
-        bellEvery: [16, 28],
-        bellDecay: 3.4,
-        bellGain: 0.032,
-      },
-      sad: {
-        label: 'Грустный',
-        chords: [
-          { bass: 110.0, notes: [220.0, 261.63, 329.63, 392.0] }, // Am7
-          { bass: 87.31, notes: [174.61, 220.0, 261.63, 329.63] }, // Fmaj7
-          { bass: 73.42, notes: [146.83, 174.61, 220.0, 261.63] }, // Dm7
-          { bass: 82.41, notes: [164.81, 207.65, 246.94, 293.66] }, // E7
-        ],
-        chordEvery: 9,
-        padLength: 13,
-        padGain: 0.075,
-        bassGain: 0.08,
-        punch: 0,
-        filterHz: 1150,
-        bells: [1046.5, 1174.66, 1318.51, 1567.98],
-        bellEvery: [6, 12],
-        bellDecay: 6,
-        bellGain: 0.045,
+        padGain: 0.08,
+        bassGain: 0.12,
+        filterHz: 1400,
+        bells: [880.0, 1046.5, 1318.5, 1568.0, 1975.5],
+        bellEvery: [12, 22],
+        bellDecay: 5,
+        bellGain: 0.038,
+        arpEvery: 1.8,
+        arpGain: 0.03,
+        arpDecay: 2.8,
       },
     };
+
+    // Ноты арпеджио — ля-минорная пентатоника, ложится на все аккорды
+    const ARP_NOTES = [440.0, 523.25, 659.25, 783.99, 880.0];
 
     let ctx = null;
     let master = null;
@@ -448,15 +408,15 @@
     let timer = 0;
     let nextChordAt = 0;
     let nextBellAt = 0;
+    let nextArpAt = 0;
+    let arpIndex = 0;
     let lastTickAt = 0;
     let chordIndex = 0;
     let on = false;
-    let trackId = store.get(KEYS.track, 'calm');
-    if (!TRACKS[trackId]) trackId = 'calm';
     let volume = Math.min(1, Math.max(0, Number(store.get(KEYS.volume, '45')) / 100));
     const listeners = new Set();
 
-    const track = () => TRACKS[trackId] || TRACKS.calm;
+    const track = () => TRACKS.calm;
 
     const emit = () => listeners.forEach((fn) => fn(on, volume));
 
@@ -512,12 +472,20 @@
       dry.gain.value = 0.85;
 
       wet = ctx.createGain();
-      wet.gain.value = 0.5;
+      wet.gain.value = 0.56;
 
       const reverb = makeReverb(ctx);
 
       padBus = ctx.createGain();
       padBus.gain.value = 0.9;
+
+      // Очень медленное «дыхание» громкости — звук кажется живым
+      const breathe = ctx.createOscillator();
+      breathe.frequency.value = 0.045;
+      const breatheDepth = ctx.createGain();
+      breatheDepth.gain.value = 0.07;
+      breathe.connect(breatheDepth).connect(padBus.gain);
+      breathe.start();
 
       const filter = ctx.createBiquadFilter();
       filter.type = 'lowpass';
@@ -594,22 +562,6 @@
       bass.connect(bassLevel).connect(padBus);
       bass.start(at);
       bass.stop(at + t.padLength + 0.1);
-
-      // У «басового» трека — мягкий удар на смене аккорда
-      if (t.punch > 0) {
-        const punch = ctx.createOscillator();
-        punch.type = 'sine';
-        punch.frequency.value = chord.bass * 2;
-
-        const punchLevel = ctx.createGain();
-        punchLevel.gain.setValueAtTime(0.0001, at);
-        punchLevel.gain.linearRampToValueAtTime(t.punch, at + 0.5);
-        punchLevel.gain.linearRampToValueAtTime(0.0001, at + 2.4);
-
-        punch.connect(punchLevel).connect(padBus);
-        punch.start(at);
-        punch.stop(at + 2.6);
-      }
     }
 
     function playBell(freq, at) {
@@ -637,6 +589,36 @@
       osc.stop(at + t.bellDecay + 0.2);
     }
 
+    // Мягкие «капли» арпеджио — добавляют движение и воздух
+    function playArp(at) {
+      const t = track();
+      const freq = ARP_NOTES[arpIndex % ARP_NOTES.length];
+      const pan = arpIndex % 2 === 0 ? -0.45 : 0.45;
+      arpIndex += 1;
+
+      const osc = ctx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+
+      const level = ctx.createGain();
+      level.gain.setValueAtTime(0.0001, at);
+      level.gain.linearRampToValueAtTime(t.arpGain, at + 0.03);
+      level.gain.exponentialRampToValueAtTime(0.0004, at + t.arpDecay);
+
+      let tail = level;
+      if (typeof ctx.createStereoPanner === 'function') {
+        const panner = ctx.createStereoPanner();
+        panner.pan.value = pan;
+        level.connect(panner);
+        tail = panner;
+      }
+
+      osc.connect(level);
+      tail.connect(padBus);
+      osc.start(at);
+      osc.stop(at + t.arpDecay + 0.1);
+    }
+
     function tick() {
       if (!on || !ctx || ctx.state !== 'running') return;
 
@@ -647,6 +629,7 @@
       // Если вкладка «спала», не догоняем упущенное пачкой аккордов.
       if (nextChordAt < now) nextChordAt = now + 0.05;
       if (nextBellAt < now) nextBellAt = now + 2;
+      if (nextArpAt < now) nextArpAt = now + 0.4;
 
       // Держим впереди ~12 секунд музыки. Если браузер притормозил
       // таймеры (фоновая вкладка), звук всё равно не прервётся.
@@ -659,6 +642,11 @@
       while (nextBellAt < now + 12) {
         playBell(t.bells[Math.floor(Math.random() * t.bells.length)], Math.max(nextBellAt, now + 0.05));
         nextBellAt += t.bellEvery[0] + Math.random() * (t.bellEvery[1] - t.bellEvery[0]);
+      }
+
+      while (nextArpAt < now + 12) {
+        playArp(Math.max(nextArpAt, now + 0.05));
+        nextArpAt += t.arpEvery;
       }
     }
 
@@ -688,7 +676,6 @@
           MUSIC_KEY,
           JSON.stringify({
             at: Date.now(),
-            track: trackId,
             index: chordIndex % track().chords.length,
           }),
         );
@@ -715,47 +702,6 @@
 
     // Смена трека: мягко гасим текущий звук и запускаем новый
     let switchToken = 0;
-
-    function setTrack(id) {
-      if (!TRACKS[id] || id === trackId) return;
-
-      trackId = id;
-      store.set(KEYS.track, id);
-      emit();
-
-      if (!on) return;
-
-      const token = (switchToken += 1);
-      stopScheduling();
-
-      try {
-        fadeTo(0.0001, 0.45);
-      } catch {
-        // Контекст мог закрыться — не страшно.
-      }
-
-      window.setTimeout(() => {
-        if (token !== switchToken || !on) return;
-
-        const dying = ctx;
-        ctx = null;
-        master = null;
-        padBus = null;
-        wet = null;
-        probe = null;
-        if (dying) dying.close().catch(() => {});
-
-        init();
-        chordIndex = 0;
-
-        if (ctx.state === 'running') {
-          fadeTo(volume, 1.1);
-          ensureScheduling();
-        } else {
-          armGesture();
-        }
-      }, 550);
-    }
 
     async function enable() {
       if (on) return;
@@ -790,6 +736,8 @@
       stopScheduling();
       nextChordAt = ctx.currentTime + 0.15;
       nextBellAt = ctx.currentTime + 2.2;
+      nextArpAt = ctx.currentTime + 1.1;
+      arpIndex = 0;
       tick();
       schedule();
     }
@@ -909,7 +857,6 @@
     return {
       isOn: () => on,
       getVolume: () => volume,
-      getTrack: () => trackId,
       contextState: () => (ctx ? ctx.state : 'closed'),
       level() {
         if (!probe || !ctx) return 0;
@@ -926,7 +873,6 @@
         if (next) enable().catch(() => {});
         else disable();
       },
-      setTrack,
       setVolume,
       onChange: (fn) => listeners.add(fn),
       autostart,
@@ -977,14 +923,6 @@
       '<button class="vibe-switch" type="button" role="switch" aria-label="Фоновая музыка" aria-checked="false" data-vibe="sound">' +
       '<span class="vibe-switch__knob"></span></button>' +
       '</div>' +
-      '<div class="vibe-panel__row">' +
-      '<span class="vibe-panel__label">Трек</span>' +
-      '<select class="vibe-select" data-vibe="track" aria-label="Музыкальный трек">' +
-      '<option value="calm">Спокойный</option>' +
-      '<option value="bass">Басс</option>' +
-      '<option value="sad">Грустный</option>' +
-      '</select>' +
-      '</div>' +
       '<label class="vibe-panel__row vibe-panel__row--volume">' +
       '<span class="vibe-panel__label">Громкость</span>' +
       '<input class="vibe-range" type="range" min="0" max="100" step="1" value="45" data-vibe="volume">' +
@@ -996,8 +934,6 @@
     const segButtons = [...panel.querySelectorAll('[data-theme-value]')];
     const snowSwitch = panel.querySelector('[data-vibe="snow"]');
     const soundSwitch = panel.querySelector('[data-vibe="sound"]');
-    const trackSelect = panel.querySelector('[data-vibe="track"]');
-    const trackRow = trackSelect.closest('.vibe-panel__row');
     const volumeRange = panel.querySelector('[data-vibe="volume"]');
     const closeBtn = panel.querySelector('.vibe-panel__close');
 
@@ -1016,15 +952,8 @@
 
     function syncSound() {
       const playing = Music.isOn();
-
       soundSwitch.setAttribute('aria-checked', String(playing));
       panel.classList.toggle('vibe-panel--playing', playing);
-
-      // Без музыки выбор трека бессмысленен — блокируем его
-      trackSelect.value = Music.getTrack();
-      trackSelect.disabled = !playing;
-      trackRow.classList.toggle('vibe-panel__row--disabled', !playing);
-      trackRow.title = playing ? '' : 'Сначала включите музыку';
     }
 
     segButtons.forEach((btn) => {
@@ -1050,10 +979,6 @@
     volumeRange.value = String(Math.round(Music.getVolume() * 100));
     volumeRange.addEventListener('input', () => {
       Music.setVolume(Number(volumeRange.value) / 100);
-    });
-
-    trackSelect.addEventListener('change', () => {
-      Music.setTrack(trackSelect.value);
     });
 
     Music.onChange(() => {
