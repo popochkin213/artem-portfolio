@@ -411,6 +411,7 @@
     let wet = null;
     let probe = null;
     let timer = 0;
+    const liveContexts = new Set();
     let nextChordAt = 0;
     let nextBellAt = 0;
     let nextArpAt = 0;
@@ -449,6 +450,7 @@
       if (!AudioCtx) throw new Error('Web Audio не поддерживается');
 
       ctx = new AudioCtx();
+      liveContexts.add(ctx);
 
       // Если браузер сам усыпил звук (свернули вкладку, сменилось
       // устройство вывода) — продолжаем, как только он разрешит.
@@ -803,17 +805,19 @@
       disarmGesture();
       stopScheduling();
 
-      const dying = ctx;
-      if (!dying) return;
-
       try {
-        fadeTo(0.0001, 0.6);
+        if (ctx) fadeTo(0.0001, 0.6);
       } catch {
         // Контекст уже мог закрыться — это не страшно.
       }
 
       window.setTimeout(() => {
-        dying.close().catch(() => {});
+        // Гасим все живые контексты: даже если где-то остался старый,
+        // тишина будет полной
+        liveContexts.forEach((item) => {
+          item.close().catch(() => {});
+        });
+        liveContexts.clear();
       }, 800);
 
       ctx = null;
@@ -1173,12 +1177,43 @@
     });
   }
 
+  /* ==========================================================
+     Синхронизация между вкладками
+     ----------------------------------------------------------
+     Раньше каждая вкладка играла свою музыку: выключишь в одной,
+     а в другой продолжает. Теперь настройки общие.
+     ========================================================== */
+  function syncAcrossTabs() {
+    window.addEventListener('storage', (event) => {
+      if (!event.key) return;
+
+      if (event.key === KEYS.theme && event.newValue) {
+        Theme.set(event.newValue);
+      } else if (event.key === KEYS.snow) {
+        Snow.set(event.newValue === '1');
+      } else if (event.key === KEYS.sound) {
+        Music.setEnabled(event.newValue === '1');
+      } else if (event.key === KEYS.volume) {
+        const value = Number(event.newValue);
+        if (Number.isFinite(value)) Music.setVolume(value / 100);
+      }
+    });
+
+    // Если вкладка «проспала» событие — сверяемся при возврате в неё
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) return;
+      const wanted = store.get(KEYS.sound, '0') === '1';
+      if (wanted !== Music.isOn()) Music.setEnabled(wanted);
+    });
+  }
+
   function boot() {
     buildPanel();
 
     if (store.get(KEYS.snow, '0') === '1') Snow.set(true);
     Music.autostart();
     initCaseOverlay();
+    syncAcrossTabs();
   }
 
   // Небольшой публичный доступ: удобно проверять состояние из консоли
