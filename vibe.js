@@ -28,7 +28,6 @@
     snow: 'vibe-snow',
     sound: 'vibe-sound',
     volume: 'vibe-volume',
-    gate: 'vibe-captcha-gate',
   };
 
   const store = {
@@ -1208,37 +1207,7 @@
     });
   }
 
-  /* ==========================================================
-     Капча-шлюз при входе
-     ----------------------------------------------------------
-     Пока посетитель не прошёл две ступени, сайт не показывает
-     себя и не листается. Закрыть окно нельзя — только пройти.
-     ========================================================== */
-  function initCaptchaGate() {
-    if (!window.PortfolioCaptcha) return;
-
-    let passed = false;
-    try {
-      passed = sessionStorage.getItem(KEYS.gate) === '1';
-    } catch {
-      passed = false;
-    }
-    if (passed) return;
-
-    root.classList.add('captcha-open');
-    window.PortfolioCaptcha.gate().then((ok) => {
-      root.classList.remove('captcha-open');
-      if (!ok) return;
-      try {
-        sessionStorage.setItem(KEYS.gate, '1');
-      } catch {
-        // Приватный режим — капча покажется снова после перезагрузки.
-      }
-    });
-  }
-
   function boot() {
-    initCaptchaGate();
     buildPanel();
 
     if (store.get(KEYS.snow, '0') === '1') Snow.set(true);

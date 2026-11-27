@@ -196,11 +196,6 @@
 
     // Двухэтапная капча проходится один раз за визит
     let captchaPassed = false;
-    try {
-      captchaPassed = sessionStorage.getItem('vibe-captcha-gate') === '1';
-    } catch {
-      captchaPassed = false;
-    }
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
