@@ -105,8 +105,8 @@
     let running = false;
     let light = Theme.get() === 'light';
 
-    const DARK_COLORS = ['rgba(255, 255, 255, ALPHA)', 'rgba(206, 218, 255, ALPHA)'];
-    const LIGHT_COLORS = ['rgba(104, 112, 170, ALPHA)', 'rgba(74, 86, 150, ALPHA)'];
+    const DARK_COLORS = ['rgba(255, 255, 255, ALPHA)', 'rgba(246, 250, 255, ALPHA)'];
+    const LIGHT_COLORS = ['rgba(112, 120, 178, ALPHA)', 'rgba(86, 96, 158, ALPHA)'];
 
     const palette = () => (light ? LIGHT_COLORS : DARK_COLORS);
     const paint = (template, alpha) => template.replace('ALPHA', alpha.toFixed(2));
@@ -115,18 +115,18 @@
       const w = canvas.clientWidth || window.innerWidth;
       const h = canvas.clientHeight || window.innerHeight;
       const colors = palette();
-      const radius = 0.9 + Math.random() * 2.3;
+      const radius = 1.5 + Math.random() * 3.6;
       const sway = reduceMotion.matches ? 0.35 : 1;
 
       return {
         x: Math.random() * w,
         y: fromTop ? -10 - Math.random() * 60 : Math.random() * h,
         r: radius,
-        vy: (13 + Math.random() * 26 + radius * 5) * (reduceMotion.matches ? 0.6 : 1),
-        amp: (5 + Math.random() * 20) * sway,
+        vy: (16 + Math.random() * 32 + radius * 6) * (reduceMotion.matches ? 0.6 : 1),
+        amp: (6 + Math.random() * 22) * sway,
         phase: Math.random() * Math.PI * 2,
         speed: 0.25 + Math.random() * 0.6,
-        alpha: light ? 0.22 + Math.random() * 0.36 : 0.3 + Math.random() * 0.55,
+        alpha: light ? 0.3 + Math.random() * 0.35 : 0.55 + Math.random() * 0.45,
         color: colors[Math.random() < 0.7 ? 0 : 1],
       };
     }
@@ -196,7 +196,7 @@
       }
 
       const count = Math.round(
-        Math.min(160, Math.max(34, window.innerWidth / 11)) * (reduceMotion.matches ? 0.6 : 1),
+        Math.min(320, Math.max(80, window.innerWidth / 5)) * (reduceMotion.matches ? 0.6 : 1),
       );
       const colors = palette();
       flakes = Array.from({ length: count }, (_, index) => {
@@ -266,8 +266,8 @@
       { bass: 73.42, notes: [146.83, 174.61, 220.0, 329.63] }, // Dm9
     ];
     const BELLS = [880.0, 1046.5, 1318.5, 1568.0, 1975.5];
-    const CHORD_EVERY = 8; // секунд
-    const PAD_LENGTH = 10.5;
+    const CHORD_EVERY = 7; // секунд
+    const PAD_LENGTH = 11;
 
     let ctx = null;
     let master = null;
@@ -277,10 +277,10 @@
     let timer = 0;
     let nextChordAt = 0;
     let nextBellAt = 0;
+    let lastTickAt = 0;
     let chordIndex = 0;
     let on = false;
     let volume = Math.min(1, Math.max(0, Number(store.get(KEYS.volume, '45')) / 100));
-    let wakeTimer = 0;
     const listeners = new Set();
 
     const emit = () => listeners.forEach((fn) => fn(on, volume));
@@ -308,6 +308,20 @@
       if (!AudioCtx) throw new Error('Web Audio не поддерживается');
 
       ctx = new AudioCtx();
+
+      // Если браузер сам усыпил звук (свернули вкладку, сменилось
+      // устройство вывода) — продолжаем, как только он разрешит.
+      const context = ctx;
+      context.onstatechange = () => {
+        if (ctx !== context || !on) return;
+        if (context.state === 'running') {
+          fadeTo(volume, 0.8);
+          ensureScheduling();
+          disarmGesture();
+        } else if (context.state === 'suspended') {
+          armGesture();
+        }
+      };
 
       master = ctx.createGain();
       master.gain.value = 0.0001;
@@ -361,12 +375,14 @@
 
     function playPad(chord, at) {
       const voice = ctx.createGain();
-      const attack = 3.2;
-      const release = 5;
+      // Длинные атака и спад: аккорды перекрываются, поэтому между ними
+      // нет провала в тишину.
+      const attack = 3;
+      const release = 4.5;
 
       voice.gain.setValueAtTime(0, at);
-      voice.gain.linearRampToValueAtTime(0.1, at + attack);
-      voice.gain.setValueAtTime(0.1, at + PAD_LENGTH - release);
+      voice.gain.linearRampToValueAtTime(0.085, at + attack);
+      voice.gain.setValueAtTime(0.085, at + PAD_LENGTH - release);
       voice.gain.linearRampToValueAtTime(0, at + PAD_LENGTH);
       voice.connect(padBus);
 
@@ -395,8 +411,8 @@
 
       const bassLevel = ctx.createGain();
       bassLevel.gain.setValueAtTime(0, at);
-      bassLevel.gain.linearRampToValueAtTime(0.16, at + attack);
-      bassLevel.gain.setValueAtTime(0.16, at + PAD_LENGTH - release);
+      bassLevel.gain.linearRampToValueAtTime(0.13, at + attack);
+      bassLevel.gain.setValueAtTime(0.13, at + PAD_LENGTH - release);
       bassLevel.gain.linearRampToValueAtTime(0, at + PAD_LENGTH);
 
       bass.connect(bassLevel).connect(padBus);
@@ -429,27 +445,37 @@
     }
 
     function tick() {
-      if (!on || !ctx) return;
+      if (!on || !ctx || ctx.state !== 'running') return;
 
       const now = ctx.currentTime;
+      lastTickAt = now;
 
-      // Планируем с запасом: даже если браузер притормозил вкладку,
-      // аккорды не собьются в кучу.
-      if (now + 0.6 > nextChordAt) {
+      // Если вкладка «спала», не догоняем упущенное пачкой аккордов.
+      if (nextChordAt < now) nextChordAt = now + 0.05;
+      if (nextBellAt < now) nextBellAt = now + 2;
+
+      // Держим впереди ~12 секунд музыки. Если браузер притормозил
+      // таймеры (фоновая вкладка), звук всё равно не прервётся.
+      while (nextChordAt < now + 12) {
         playPad(CHORDS[chordIndex % CHORDS.length], Math.max(nextChordAt, now + 0.05));
         chordIndex += 1;
-        nextChordAt = Math.max(nextChordAt, now) + CHORD_EVERY;
+        nextChordAt += CHORD_EVERY;
       }
 
-      if (now + 0.6 > nextBellAt) {
+      while (nextBellAt < now + 12) {
         playBell(BELLS[Math.floor(Math.random() * BELLS.length)], Math.max(nextBellAt, now + 0.05));
-        nextBellAt = Math.max(nextBellAt, now) + 9 + Math.random() * 9;
+        nextBellAt += 9 + Math.random() * 9;
       }
     }
 
     function schedule() {
       window.clearInterval(timer);
       timer = window.setInterval(tick, 700);
+    }
+
+    function stopScheduling() {
+      window.clearInterval(timer);
+      timer = 0;
     }
 
     function fadeTo(value, seconds) {
@@ -462,20 +488,79 @@
     async function enable() {
       if (on) return;
       if (!ctx) init();
-      if (ctx.state === 'suspended') await ctx.resume();
 
       on = true;
       chordIndex = 0;
-      nextChordAt = ctx.currentTime + 0.2;
-      nextBellAt = nextChordAt + 3.5;
-
-      fadeTo(volume, 1.8);
-      tick();
-      schedule();
-
       store.set(KEYS.sound, '1');
       emit();
+
+      try {
+        if (ctx.state === 'suspended') await ctx.resume();
+      } catch {
+        // Браузер подождёт действия человека — включим звук по клику.
+      }
+
+      if (ctx.state === 'running') {
+        fadeTo(volume, 1.6);
+        ensureScheduling();
+      } else {
+        armGesture();
+      }
     }
+
+    // Планировщик запускаем только на «живом» контексте: иначе аккорды
+    // копятся и после разблокировки звука играют все разом.
+    function ensureScheduling() {
+      if (!on || !ctx || ctx.state !== 'running') return;
+      stopScheduling();
+      nextChordAt = ctx.currentTime + 0.15;
+      nextBellAt = ctx.currentTime + 2.2;
+      tick();
+      schedule();
+    }
+
+    // Браузер запрещает автозапуск: после загрузки страницы и после
+    // перехода на другую страницу звук ждёт первого действия человека.
+    // Любой клик или клавиша продолжает музыку с этого места.
+    let kick = null;
+
+    function armGesture() {
+      if (kick) return;
+      kick = () => {
+        if (!on || !ctx) return;
+        const start = () => {
+          if (!on || !ctx || ctx.state !== 'running') return;
+          fadeTo(volume, 0.9);
+          ensureScheduling();
+          disarmGesture();
+        };
+        if (ctx.state === 'suspended') ctx.resume().then(start).catch(() => {});
+        else start();
+      };
+      ['pointerdown', 'keydown', 'touchstart'].forEach((name) => {
+        document.addEventListener(name, kick, { passive: true });
+      });
+    }
+
+    function disarmGesture() {
+      if (!kick) return;
+      ['pointerdown', 'keydown', 'touchstart'].forEach((name) => {
+        document.removeEventListener(name, kick);
+      });
+      kick = null;
+    }
+
+    // Любое действие человека — повод проверить, не уснул ли звук:
+    // в фоновой вкладке таймеры тормозят, и буфер успевает кончиться.
+    const wake = () => {
+      if (!on || !ctx || ctx.state !== 'running') return;
+      if (ctx.currentTime - lastTickAt < 9) return;
+      fadeTo(volume, 0.6);
+      ensureScheduling();
+    };
+    ['pointerdown', 'keydown', 'touchstart'].forEach((name) => {
+      document.addEventListener(name, wake, { passive: true });
+    });
 
     function disable() {
       if (!on) return;
@@ -483,8 +568,8 @@
       store.set(KEYS.sound, '0');
       emit();
 
-      window.clearInterval(timer);
-      timer = 0;
+      disarmGesture();
+      stopScheduling();
 
       const dying = ctx;
       if (!dying) return;
@@ -513,26 +598,31 @@
       emit();
     }
 
-    // Возврат музыки после перезагрузки: пробуем сразу, а если браузер
-    // заблокировал звук — стартуем при первом касании.
+    // Возврат музыки после перезагрузки или перехода по сайту:
+    // если браузер разрешит — заиграет сразу, иначе по первому клику.
     function autostart() {
       if (on || store.get(KEYS.sound, '0') !== '1') return;
-
       enable().catch(() => {});
-
-      const kick = () => {
-        if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
-        cleanup();
-      };
-      const events = ['pointerdown', 'keydown', 'touchstart'];
-      const cleanup = () => {
-        events.forEach((name) => document.removeEventListener(name, kick));
-        window.clearTimeout(wakeTimer);
-      };
-
-      events.forEach((name) => document.addEventListener(name, kick, { passive: true }));
-      wakeTimer = window.setTimeout(cleanup, 60000);
     }
+
+    // Вкладку свернули и вернули — звук мог уснуть, будим аккуратно.
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden || !on || !ctx) return;
+
+      if (ctx.state === 'suspended') {
+        ctx
+          .resume()
+          .then(() => {
+            if (!on || !ctx || ctx.state !== 'running') return;
+            fadeTo(volume, 0.8);
+            ensureScheduling();
+          })
+          .catch(() => {});
+      } else if (ctx.state === 'running' && ctx.currentTime - lastTickAt > 9) {
+        fadeTo(volume, 0.8);
+        ensureScheduling();
+      }
+    });
 
     return {
       isOn: () => on,
