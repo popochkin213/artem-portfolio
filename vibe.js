@@ -54,6 +54,9 @@
     let choice = store.get(KEYS.theme, 'dark');
     if (!THEMES.includes(choice)) choice = 'dark';
 
+    let applied = null;
+    let switchTimer = 0;
+
     function resolve() {
       if (choice === 'system') return media.matches ? 'light' : 'dark';
       return choice;
@@ -61,11 +64,21 @@
 
     function apply() {
       const value = resolve();
+      const changed = applied !== null && applied !== value;
+      applied = value;
+
       if (value === 'light') root.dataset.theme = 'light';
       else delete root.dataset.theme;
 
       const meta = document.querySelector('meta[name="theme-color"]');
       if (meta) meta.setAttribute('content', value === 'light' ? '#f7f7fb' : '#08080c');
+
+      // Красиво перекрашиваем страницу, а не щёлкаем цветами
+      if (changed) {
+        root.classList.add('theme-switch');
+        window.clearTimeout(switchTimer);
+        switchTimer = window.setTimeout(() => root.classList.remove('theme-switch'), 420);
+      }
 
       listeners.forEach((fn) => fn(value, choice));
     }
@@ -95,41 +108,56 @@
 
   /* ==========================================================
      Снег
+     ----------------------------------------------------------
+     Снежинки живут в координатах страницы: при прокрутке они
+     уезжают вместе с содержимым, а не висят на экране. Позиции
+     запоминаются в sessionStorage, поэтому при переходе между
+     страницами снег продолжается с того же места.
      ========================================================== */
   const Snow = (() => {
+    const SESSION_KEY = 'vibe-snow-state';
+    const FADE_MS = 600;
+
     let canvas = null;
     let ctx = null;
     let flakes = [];
     let raf = 0;
     let last = 0;
-    let running = false;
+    let running = false; // анимация идёт, в том числе затухание
+    let enabled = false; // снег включён человеком
     let light = Theme.get() === 'light';
+    let prevScroll = 0;
+    let stopTimer = 0;
 
     const DARK_COLORS = ['rgba(255, 255, 255, ALPHA)', 'rgba(246, 250, 255, ALPHA)'];
     const LIGHT_COLORS = ['rgba(112, 120, 178, ALPHA)', 'rgba(86, 96, 158, ALPHA)'];
 
     const palette = () => (light ? LIGHT_COLORS : DARK_COLORS);
     const paint = (template, alpha) => template.replace('ALPHA', alpha.toFixed(2));
+    const vw = () => window.innerWidth;
+    const vh = () => window.innerHeight;
 
-    function makeFlake(fromTop) {
-      const w = canvas.clientWidth || window.innerWidth;
-      const h = canvas.clientHeight || window.innerHeight;
-      const colors = palette();
+    function makeFlake(screenY) {
       const radius = 1.5 + Math.random() * 3.6;
-      const sway = reduceMotion.matches ? 0.35 : 1;
       const alpha = light ? 0.3 + Math.random() * 0.35 : 0.55 + Math.random() * 0.45;
+      const y = typeof screenY === 'number' ? screenY : Math.random() * vh();
 
       return {
-        x: Math.random() * w,
-        y: fromTop ? -10 - Math.random() * 60 : Math.random() * h,
+        x: Math.random() * vw(),
+        y: window.scrollY + y,
         r: radius,
         vy: (16 + Math.random() * 32 + radius * 6) * (reduceMotion.matches ? 0.6 : 1),
-        amp: (6 + Math.random() * 22) * sway,
+        amp: (6 + Math.random() * 22) * (reduceMotion.matches ? 0.35 : 1),
         phase: Math.random() * Math.PI * 2,
         speed: 0.25 + Math.random() * 0.6,
         alpha,
-        color: paint(colors[Math.random() < 0.7 ? 0 : 1], alpha),
+        color: paint(palette()[Math.random() < 0.7 ? 0 : 1], alpha),
       };
+    }
+
+    function targetCount() {
+      const base = Math.min(420, Math.max(80, vw() / 5));
+      return Math.round(base * (reduceMotion.matches ? 0.65 : 1));
     }
 
     function repaintColors() {
@@ -139,11 +167,65 @@
       });
     }
 
+    // Продолжаем снег с того места, где он был на прошлой странице
+    function restore() {
+      try {
+        const raw = sessionStorage.getItem(SESSION_KEY);
+        if (!raw) return null;
+
+        const data = JSON.parse(raw);
+        if (!data || !Array.isArray(data.f) || Date.now() - data.at > 12000) return null;
+
+        const w = vw();
+        const h = vh();
+        const colors = palette();
+
+        return data.f.map((item, index) => {
+          const [nx, ny, r, vy, amp, phase, speed, alpha] = item;
+          return {
+            x: nx * w,
+            y: window.scrollY + ny * h,
+            r,
+            vy,
+            amp,
+            phase,
+            speed,
+            alpha,
+            color: paint(colors[index % 5 === 0 ? 1 : 0], alpha),
+          };
+        });
+      } catch {
+        return null;
+      }
+    }
+
+    function persist() {
+      if (!enabled || !flakes.length) return;
+      try {
+        const w = vw() || 1;
+        const h = vh() || 1;
+        const scroll = window.scrollY;
+        const data = flakes.map((flake) => [
+          Number((flake.x / w).toFixed(4)),
+          Number(((flake.y - scroll) / h).toFixed(4)),
+          Number(flake.r.toFixed(1)),
+          Number(flake.vy.toFixed(1)),
+          Number(flake.amp.toFixed(1)),
+          Number(flake.phase.toFixed(2)),
+          Number(flake.speed.toFixed(2)),
+          Number(flake.alpha.toFixed(2)),
+        ]);
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify({ at: Date.now(), f: data }));
+      } catch {
+        // Приватный режим — просто начнём с новых снежинок.
+      }
+    }
+
     function resize() {
       if (!canvas) return;
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const w = window.innerWidth;
-      const h = window.innerHeight;
+      const w = vw();
+      const h = vh();
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
       canvas.style.width = `${w}px`;
@@ -157,8 +239,11 @@
       const dt = Math.min((now - last) / 1000 || 0.016, 0.06);
       last = now;
 
-      const w = window.innerWidth;
-      const h = window.innerHeight;
+      const w = vw();
+      const h = vh();
+      const scroll = window.scrollY;
+      const jump = Math.abs(scroll - prevScroll);
+      prevScroll = scroll;
 
       ctx.clearRect(0, 0, w, h);
 
@@ -167,17 +252,30 @@
         flake.phase += flake.speed * dt;
         flake.x += Math.cos(flake.phase) * flake.amp * dt;
 
-        if (flake.y > h + 8) {
-          flake.y = -8;
-          flake.x = Math.random() * w;
-        }
         if (flake.x < -12) flake.x = w + 12;
         else if (flake.x > w + 12) flake.x = -12;
+
+        const screenY = flake.y - scroll;
+
+        // Уехала за нижний край — возвращаем сверху.
+        if (screenY > h + 24) {
+          flake.y = scroll - 10 - Math.random() * 40;
+          flake.x = Math.random() * w;
+        } else if (screenY < -24) {
+          // Прокрутили мимо: при быстром рывке рассыпаем по экрану,
+          // при плавном — возвращаем снизу, как новую порцию снега.
+          const y = jump > h * 0.4 ? Math.random() * h : h + 10 + Math.random() * 40;
+          flake.y = scroll + y;
+          flake.x = Math.random() * w;
+        }
+
+        const drawY = flake.y - scroll;
+        if (drawY < -30 || drawY > h + 30) continue;
 
         ctx.globalAlpha = flake.alpha;
         ctx.fillStyle = flake.color;
         ctx.beginPath();
-        ctx.arc(flake.x, flake.y, flake.r, 0, Math.PI * 2);
+        ctx.arc(flake.x, drawY, flake.r, 0, Math.PI * 2);
         ctx.fill();
       }
 
@@ -186,7 +284,12 @@
     }
 
     function start() {
-      if (running) return;
+      if (enabled) return;
+      if (stopTimer) {
+        window.clearTimeout(stopTimer);
+        stopTimer = 0;
+      }
+
       if (!canvas) {
         canvas = document.createElement('canvas');
         canvas.className = 'snow-layer';
@@ -196,26 +299,36 @@
         resize();
       }
 
-      const count = Math.round(
-        Math.min(320, Math.max(80, window.innerWidth / 5)) * (reduceMotion.matches ? 0.6 : 1),
-      );
-      const colors = palette();
-      flakes = Array.from({ length: count }, (_, index) => {
-        const flake = makeFlake(false);
-        flake.color = paint(colors[index % 5 === 0 ? 1 : 0], flake.alpha);
-        return flake;
-      });
+      if (!running) {
+        const count = targetCount();
+        const saved = restore();
+        flakes = saved && saved.length ? saved.slice(0, count) : [];
+        while (flakes.length < count) flakes.push(makeFlake());
 
-      running = true;
-      last = performance.now();
-      raf = window.requestAnimationFrame(frame);
+        prevScroll = window.scrollY;
+        running = true;
+        last = performance.now();
+        raf = window.requestAnimationFrame(frame);
+      }
+
+      enabled = true;
+      canvas.classList.add('snow-layer--on');
     }
 
+    // Плавно гасим и убираем, состояние при этом запоминается
     function stop() {
-      running = false;
-      window.cancelAnimationFrame(raf);
-      raf = 0;
-      if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!enabled) return;
+      enabled = false;
+      if (canvas) canvas.classList.remove('snow-layer--on');
+
+      stopTimer = window.setTimeout(() => {
+        stopTimer = 0;
+        if (enabled) return;
+        running = false;
+        window.cancelAnimationFrame(raf);
+        raf = 0;
+        if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }, FADE_MS);
     }
 
     window.addEventListener('resize', () => {
@@ -226,6 +339,7 @@
     document.addEventListener('visibilitychange', () => {
       if (!canvas) return;
       if (document.hidden) {
+        persist();
         window.cancelAnimationFrame(raf);
       } else if (running) {
         last = performance.now();
@@ -233,13 +347,15 @@
       }
     });
 
+    window.addEventListener('pagehide', persist);
+
     Theme.onChange((value) => {
       light = value === 'light';
       if (running) repaintColors();
     });
 
     return {
-      isOn: () => running,
+      isOn: () => enabled,
       set(on) {
         if (on) start();
         else stop();
@@ -269,6 +385,7 @@
     const BELLS = [880.0, 1046.5, 1318.5, 1568.0, 1975.5];
     const CHORD_EVERY = 7; // секунд
     const PAD_LENGTH = 11;
+    const MUSIC_KEY = 'vibe-music-state';
 
     let ctx = null;
     let master = null;
@@ -486,12 +603,43 @@
       master.gain.linearRampToValueAtTime(Math.max(value, 0.0001), now + seconds);
     }
 
+    // Позиция в прогрессии хранится в sessionStorage: на новой странице
+    // музыка продолжается с того же аккорда, а не начинается сначала.
+    function saveState() {
+      if (!on) return;
+      try {
+        sessionStorage.setItem(
+          MUSIC_KEY,
+          JSON.stringify({ at: Date.now(), index: chordIndex % CHORDS.length }),
+        );
+      } catch {
+        // Приватный режим — просто начнём с первого аккорда.
+      }
+    }
+
+    function readState() {
+      try {
+        const raw = sessionStorage.getItem(MUSIC_KEY);
+        if (!raw) return null;
+
+        const data = JSON.parse(raw);
+        if (!data || typeof data.index !== 'number') return null;
+        if (Date.now() - data.at > 5 * 60 * 1000) return null;
+
+        return ((data.index % CHORDS.length) + CHORDS.length) % CHORDS.length;
+      } catch {
+        return null;
+      }
+    }
+
     async function enable() {
       if (on) return;
       if (!ctx) init();
 
+      const saved = readState();
+
       on = true;
-      chordIndex = 0;
+      chordIndex = saved === null ? 0 : saved;
       store.set(KEYS.sound, '1');
       emit();
 
@@ -502,7 +650,8 @@
       }
 
       if (ctx.state === 'running') {
-        fadeTo(volume, 1.6);
+        // Если музыка уже играла на прошлой странице — входим мягко и быстро
+        fadeTo(volume, saved === null ? 1.6 : 0.7);
         ensureScheduling();
       } else {
         armGesture();
@@ -605,6 +754,12 @@
       if (on || store.get(KEYS.sound, '0') !== '1') return;
       enable().catch(() => {});
     }
+
+    // Запоминаем аккорд, чтобы на следующей странице продолжить с него
+    window.addEventListener('pagehide', saveState);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) saveState();
+    });
 
     // Вкладку свернули и вернули — звук мог уснуть, будим аккуратно.
     document.addEventListener('visibilitychange', () => {
@@ -755,34 +910,43 @@
       syncSound();
     });
 
+    let isOpen = false;
+
     function open() {
+      isOpen = true;
       panel.hidden = false;
       button.setAttribute('aria-expanded', 'true');
       button.classList.remove('vibe-toggle--hint');
+      requestAnimationFrame(() => panel.classList.add('vibe-panel--open'));
       syncTheme();
       syncSnow();
       syncSound();
     }
 
     function close(returnFocus) {
-      panel.hidden = true;
+      if (!isOpen) return;
+      isOpen = false;
+      panel.classList.remove('vibe-panel--open');
       button.setAttribute('aria-expanded', 'false');
+      window.setTimeout(() => {
+        if (!isOpen) panel.hidden = true;
+      }, 200);
       if (returnFocus) button.focus();
     }
 
     button.addEventListener('click', () => {
-      if (panel.hidden) open();
-      else close(false);
+      if (isOpen) close(false);
+      else open();
     });
 
     closeBtn.addEventListener('click', () => close(true));
 
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && !panel.hidden) close(true);
+      if (event.key === 'Escape' && isOpen) close(true);
     });
 
     document.addEventListener('click', (event) => {
-      if (panel.hidden) return;
+      if (!isOpen) return;
       if (panel.contains(event.target) || button.contains(event.target)) return;
       close(false);
     });
@@ -803,7 +967,7 @@
 
     // Мягкая подсказка: через пару секунд кнопка начинает «дышать»
     const hint = window.setTimeout(() => {
-      if (panel.hidden) button.classList.add('vibe-toggle--hint');
+      if (!isOpen) button.classList.add('vibe-toggle--hint');
     }, 2600);
     const stopHint = window.setTimeout(() => button.classList.remove('vibe-toggle--hint'), 22000);
 

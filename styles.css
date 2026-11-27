@@ -1229,7 +1229,10 @@ html[data-theme="light"] .demo-field > label { color: #26263c; }
   inset: 0;
   z-index: 90;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity .6s ease;
 }
+.snow-layer--on { opacity: 1; }
 
 .vibe-toggle {
   position: fixed;
@@ -1297,8 +1300,13 @@ html[data-theme="light"] .vibe-toggle {
   color: var(--text);
   backdrop-filter: blur(16px);
   box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .95);
+  opacity: 0;
+  transform: translateY(10px) scale(.985);
+  transform-origin: 100% 100%;
+  transition: opacity .2s ease, transform .2s ease;
 }
 .vibe-panel[hidden] { display: none; }
+.vibe-panel--open { opacity: 1; transform: none; }
 
 html[data-theme="light"] .vibe-panel {
   background: rgba(255, 255, 255, .98);
@@ -1444,5 +1452,61 @@ html[data-theme="light"] .vibe-panel {
     bottom: calc(70px + var(--vibe-lift, 0px));
     width: auto;
   }
+}
+
+/* ============================================================
+   Плавные переходы
+   ============================================================ */
+
+/* Плавная смена темы: подсвечиваем переход на полсекунды */
+.theme-switch *,
+.theme-switch *::before,
+.theme-switch *::after {
+  transition: background-color .35s ease, border-color .35s ease,
+              color .35s ease, box-shadow .35s ease, fill .35s ease !important;
+}
+
+/* Мягкий переход между страницами (Chrome, Edge, Safari) */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: vibe-page-out .22s ease both;
+}
+
+::view-transition-new(root) {
+  animation: vibe-page-in .28s ease both;
+}
+
+@keyframes vibe-page-out {
+  to { opacity: 0; }
+}
+
+@keyframes vibe-page-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Где переходов между документами нет (Firefox) — мягкое появление страницы */
+@supports not (view-transition-name: none) {
+  body { animation: vibe-fade-in .32s ease both; }
+}
+
+@keyframes vibe-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-switch *,
+  .theme-switch *::before,
+  .theme-switch *::after { transition: none !important; }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none !important; }
+
+  .vibe-panel,
+  .snow-layer { transition: none !important; }
 }
 
