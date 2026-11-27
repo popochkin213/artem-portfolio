@@ -25,6 +25,7 @@
   let modal = null;
   let resolveVerify = null;
   let stage = 1;
+  let gateMode = false;
 
   // Данные первой ступени
   let gridCells = [];
@@ -222,8 +223,12 @@
 
     document.body.append(modal);
 
-    modal.querySelector('.captcha__close').addEventListener('click', () => finish(false));
-    modal.querySelector('[data-captcha-close]').addEventListener('click', () => finish(false));
+    modal.querySelector('.captcha__close').addEventListener('click', () => {
+      if (!gateMode) finish(false);
+    });
+    modal.querySelector('[data-captcha-close]').addEventListener('click', () => {
+      if (!gateMode) finish(false);
+    });
     modal.querySelector('[data-captcha-refresh]').addEventListener('click', () => buildGrid());
     modal.querySelector('[data-captcha-check]').addEventListener('click', checkGrid);
     modal.querySelector('[data-captcha-refresh-text]').addEventListener('click', () => buildText());
@@ -240,7 +245,7 @@
     });
 
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && modal && !modal.hidden) finish(false);
+      if (event.key === 'Escape' && modal && !modal.hidden && !gateMode) finish(false);
     });
   }
 
@@ -467,6 +472,9 @@
 
   function finish(ok) {
     if (!modal || modal.hidden) return;
+    // В режиме шлюза отменить нельзя — только пройти
+    if (gateMode && !ok) return;
+
     modal.hidden = true;
     document.documentElement.classList.remove('captcha-open');
 
@@ -478,8 +486,13 @@
   /* ==========================================================
      Публичный интерфейс
      ========================================================== */
-  function verify() {
+  function verify(options) {
+    const gate = Boolean(options && options.gate);
     if (!modal) buildModal();
+
+    gateMode = gate;
+    modal.classList.toggle('captcha--gate', gate);
+    modal.querySelector('.captcha__close').hidden = gate;
 
     return new Promise((resolve) => {
       resolveVerify = resolve;
@@ -501,8 +514,7 @@
 
   window.PortfolioCaptcha = {
     verify,
-    get passed() {
-      return false;
-    },
+    // Шлюз при входе на сайт: закрыть нельзя, только пройти
+    gate: () => verify({ gate: true }),
   };
 })();

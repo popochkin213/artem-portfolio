@@ -83,6 +83,11 @@ const consentLabel = document.getElementById('consent-label');
 
 // Капча проходится один раз за визит страницы
 let captchaPassed = false;
+try {
+  captchaPassed = sessionStorage.getItem('vibe-captcha-gate') === '1';
+} catch {
+  captchaPassed = false;
+}
 
 // Время открытия страницы — по нему сервер отсекает слишком быстрые отправки
 const formLoadedAt = Date.now();

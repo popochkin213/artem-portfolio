@@ -1308,6 +1308,12 @@ html[data-theme="light"] .service-toast {
 }
 .captcha[hidden] { display: none; }
 
+/* Режим шлюза: сайт за окном не видно, закрыть нельзя */
+.captcha--gate .captcha__backdrop {
+  background: rgba(4, 4, 8, .94);
+  backdrop-filter: blur(10px);
+}
+
 .captcha__backdrop {
   position: absolute;
   inset: 0;
