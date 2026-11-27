@@ -12,12 +12,11 @@
   'use strict';
 
   const SHAPES = {
-    star: 'звездой',
-    circle: 'кругом',
-    triangle: 'треугольником',
-    square: 'квадратом',
-    diamond: 'ромбом',
-    heart: 'сердцем',
+    star: 'звезда',
+    circle: 'круг',
+    triangle: 'треугольник',
+    square: 'квадрат',
+    heart: 'сердце',
   };
 
   const COLORS = ['#7c5cff', '#22d3ee', '#f472b6', '#fbbf24', '#34d399', '#c084fc'];
@@ -138,28 +137,39 @@
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, size, size);
 
-    for (let i = 0; i < 14; i += 1) {
-      ctx.fillStyle = `rgba(255, 255, 255, ${rand(0.03, 0.12).toFixed(3)})`;
+    for (let i = 0; i < 12; i += 1) {
+      ctx.fillStyle = `rgba(255, 255, 255, ${rand(0.03, 0.1).toFixed(3)})`;
       ctx.beginPath();
-      ctx.arc(rand(2, size - 2), rand(2, size - 2), rand(0.6, 1.8), 0, Math.PI * 2);
+      ctx.arc(rand(2, size - 2), rand(2, size - 2), rand(0.6, 1.6), 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // Фигура: иногда две мелкие, чтобы было интереснее
-    const count = Math.random() < 0.35 ? 2 : 1;
-    for (let i = 0; i < count; i += 1) {
-      const shapeSize = size * (count === 2 ? rand(0.44, 0.56) : rand(0.62, 0.78));
-      const offset = count === 2 ? (i === 0 ? -size * 0.18 : size * 0.18) : 0;
-      drawShape(
-        ctx,
-        kind,
-        size / 2 + offset + rand(-3, 3),
-        size / 2 + rand(-4, 4),
-        shapeSize,
-        pick(COLORS),
-        rand(-0.6, 0.6),
-      );
-    }
+    // Ровно одна фигура по центру — без двусмысленности
+    drawShape(
+      ctx,
+      kind,
+      size / 2,
+      size / 2,
+      size * rand(0.62, 0.72),
+      pick(COLORS),
+      kind === 'square' ? rand(-0.12, 0.12) : rand(-0.35, 0.35),
+    );
+  }
+
+  function drawLegend(kind) {
+    const canvas = modal.querySelector('.captcha__legend');
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const size = 46;
+
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    canvas.style.width = `${size}px`;
+    canvas.style.height = `${size}px`;
+
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, size, size);
+    drawShape(ctx, kind, size / 2, size / 2, size * 0.82, '#a78bfa', 0);
   }
 
   /* ==========================================================
@@ -176,11 +186,16 @@
 
       '<div class="captcha__step captcha__step--grid">' +
       '<p class="captcha__stage">Шаг 1 из 2</p>' +
-      '<h2 class="captcha__title" id="captcha-title">Выберите все квадраты</h2>' +
-      '<p class="captcha__hint">Отметьте клетки с нужной фигурой и нажмите «Подтвердить».</p>' +
+      '<h2 class="captcha__title" id="captcha-title">Найдите все клетки с этой фигурой</h2>' +
+      '<div class="captcha__task">' +
+      '<canvas class="captcha__legend" width="46" height="46" aria-hidden="true"></canvas>' +
+      '<span class="captcha__task-name"></span>' +
+      '</div>' +
+      '<p class="captcha__hint">Отметьте <strong>все</strong> подходящие клетки и нажмите «Подтвердить».</p>' +
       '<div class="captcha__grid"></div>' +
+      '<p class="captcha__counter" aria-live="polite">Клетки не выбраны</p>' +
       '<div class="captcha__actions">' +
-      '<button class="captcha__ghost" type="button" data-captcha-refresh>Обновить</button>' +
+      '<button class="captcha__ghost" type="button" data-captcha-refresh>Другая сетка</button>' +
       '<button class="captcha__submit" type="button" data-captcha-check disabled>Подтвердить</button>' +
       '</div>' +
       '<p class="captcha__error" role="alert"></p>' +
@@ -236,7 +251,8 @@
     const grid = modal.querySelector('.captcha__grid');
     const error = modal.querySelector('.captcha__step--grid .captcha__error');
     const submit = modal.querySelector('[data-captcha-check]');
-    const title = modal.querySelector('.captcha__step--grid .captcha__title');
+    const counter = modal.querySelector('.captcha__counter');
+    const taskName = modal.querySelector('.captcha__task-name');
 
     gridTarget = pick(Object.keys(SHAPES));
     gridAnswer = new Set();
@@ -244,8 +260,10 @@
     gridCells = [];
     error.textContent = '';
     submit.disabled = true;
+    counter.textContent = 'Клетки не выбраны';
 
-    title.textContent = `Выберите все квадраты с ${SHAPES[gridTarget]}`;
+    taskName.textContent = SHAPES[gridTarget];
+    drawLegend(gridTarget);
     grid.innerHTML = '';
 
     const total = 16;
@@ -286,6 +304,10 @@
           tile.setAttribute('aria-pressed', 'true');
         }
         submit.disabled = gridSelected.size === 0;
+        counter.textContent =
+          gridSelected.size === 0
+            ? 'Клетки не выбраны'
+            : `Отмечено клеток: ${gridSelected.size}`;
         error.textContent = '';
       });
     }
@@ -293,9 +315,10 @@
 
   function checkGrid() {
     const error = modal.querySelector('.captcha__step--grid .captcha__error');
+    const grid = modal.querySelector('.captcha__grid');
 
     if (gridSelected.size === 0) {
-      error.textContent = 'Отметьте хотя бы один квадрат';
+      error.textContent = 'Отметьте хотя бы одну клетку';
       return;
     }
 
@@ -312,10 +335,11 @@
     attempts += 1;
     error.textContent =
       attempts >= 3
-        ? 'Не получилось. Попробуйте ещё раз — сетка обновилась.'
-        : 'Что-то не так. Проверьте выделение и попробуйте снова.';
+        ? 'Всё ещё не то. Сверьтесь с образцом и попробуйте снова.'
+        : 'Выбраны не все клетки или есть лишние. Проверьте выделение.';
 
-    window.setTimeout(buildGrid, 500);
+    grid.classList.add('captcha__grid--wrong');
+    window.setTimeout(() => grid.classList.remove('captcha__grid--wrong'), 420);
   }
 
   /* ==========================================================

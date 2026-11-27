@@ -1369,6 +1369,46 @@ html[data-theme="light"] .service-toast {
   color: var(--text-muted);
 }
 
+.captcha__task {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0 14px;
+  padding: 6px 14px 6px 8px;
+  border: 1px solid var(--border-bright);
+  border-radius: 14px;
+  background: var(--bg-soft);
+}
+
+.captcha__legend {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.captcha__task-name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+
+.captcha__counter {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.captcha__grid--wrong {
+  animation: captcha-shake .4s ease;
+}
+
+@keyframes captcha-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+
 .captcha__grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
