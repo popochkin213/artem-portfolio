@@ -43,6 +43,7 @@ const PUBLIC_ITEMS = [
   'vibe.css',
   'script.js',
   'vibe.js',
+  'captcha.js',
   'turnstile.js',
   'faq.html',
   'audit.html',
@@ -172,7 +173,7 @@ for (const file of textFiles) {
 const htmlFiles = walk(DIST, '.html');
 const assetVersions = new Map();
 
-for (const asset of ['styles.css', 'vibe.css', 'script.js', 'vibe.js', 'sandbox.js', 'turnstile.js']) {
+for (const asset of ['styles.css', 'vibe.css', 'script.js', 'vibe.js', 'captcha.js', 'sandbox.js', 'turnstile.js']) {
   const file = path.join(DIST, asset);
   if (!fs.existsSync(file)) continue;
   const hash = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex').slice(0, 10);
@@ -276,6 +277,9 @@ const headers = `# Сгенерировано scripts/build.js — не реда
   Cache-Control: public, max-age=600
 
 /vibe.js
+  Cache-Control: public, max-age=600
+
+/captcha.js
   Cache-Control: public, max-age=600
 
 /sandbox.js

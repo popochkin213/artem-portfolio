@@ -81,6 +81,9 @@ const form = document.getElementById('contact-form');
 const statusEl = document.getElementById('form-status');
 const consentLabel = document.getElementById('consent-label');
 
+// Капча проходится один раз за визит страницы
+let captchaPassed = false;
+
 // Время открытия страницы — по нему сервер отсекает слишком быстрые отправки
 const formLoadedAt = Date.now();
 
@@ -177,6 +180,22 @@ form.addEventListener('submit', async (event) => {
   if (turnstile && turnstile.required() && !turnstile.getToken() && !turnstileFailed) {
     showStatus('Поставьте галочку «Подтвердите, что вы человек» и отправьте ещё раз', true);
     return;
+  }
+
+  // Двухэтапная капча: сетка с фигурами, затем текст
+  if (!captchaPassed && window.PortfolioCaptcha) {
+    const captchaButton = form.querySelector('button[type="submit"]');
+    captchaButton.disabled = true;
+    try {
+      const passed = await window.PortfolioCaptcha.verify();
+      if (!passed) {
+        showStatus('Отправка отменена — капча не пройдена', true);
+        return;
+      }
+      captchaPassed = true;
+    } finally {
+      captchaButton.disabled = false;
+    }
   }
 
   const contactValue = form.elements.contact.value.trim();

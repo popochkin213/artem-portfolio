@@ -147,6 +147,7 @@
   </footer>
 
   <script src="/turnstile.js"></script>
+  <script src="/captcha.js"></script>
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -193,6 +194,9 @@
       }
     }
 
+    // Двухэтапная капча проходится один раз за визит
+    let captchaPassed = false;
+
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
 
@@ -229,6 +233,15 @@
       if (turnstile && turnstile.required() && !turnstile.getToken() && !turnstileFailed) {
         showStatus('Поставьте галочку «Подтвердите, что вы человек» и отправьте ещё раз', true);
         return;
+      }
+
+      if (!captchaPassed && window.PortfolioCaptcha) {
+        const passed = await window.PortfolioCaptcha.verify();
+        if (!passed) {
+          showStatus('Отправка отменена — капча не пройдена', true);
+          return;
+        }
+        captchaPassed = true;
       }
 
       const button = form.querySelector('button[type="submit"]');
