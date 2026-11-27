@@ -6,6 +6,7 @@
   <title>Песочница — Артём Соколов: демо в реальном времени</title>
   <meta name="description" content="Интерактивная песочница: расчёт стоимости сайта со слайдерами и живое превью кейса.">
   <meta name="theme-color" content="#08080c">
+  <script>try{var t=localStorage.getItem('vibe-theme')||'dark';if(t==='system')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';if(t==='light')document.documentElement.dataset.theme='light';}catch(e){}</script>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="canonical" href="https://artem-portfolio-7m4.pages.dev/sandbox">
   <meta property="og:type" content="website">
@@ -142,5 +143,6 @@
     document.getElementById('year').textContent = new Date().getFullYear();
   </script>
   <script src="/sandbox.js"></script>
+  <script src="/vibe.js"></script>
 </body>
 </html>

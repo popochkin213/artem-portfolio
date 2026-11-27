@@ -41,6 +41,7 @@ const PUBLIC_ITEMS = [
   'index.html',
   'styles.css',
   'script.js',
+  'vibe.js',
   'turnstile.js',
   'faq.html',
   'audit.html',
@@ -170,7 +171,7 @@ for (const file of textFiles) {
 const htmlFiles = walk(DIST, '.html');
 const assetVersions = new Map();
 
-for (const asset of ['styles.css', 'script.js', 'sandbox.js', 'turnstile.js']) {
+for (const asset of ['styles.css', 'script.js', 'vibe.js', 'sandbox.js', 'turnstile.js']) {
   const file = path.join(DIST, asset);
   if (!fs.existsSync(file)) continue;
   const hash = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex').slice(0, 10);
@@ -270,6 +271,9 @@ const headers = `# Сгенерировано scripts/build.js — не реда
 /script.js
   Cache-Control: public, max-age=600
 
+/vibe.js
+  Cache-Control: public, max-age=600
+
 /sandbox.js
   Cache-Control: public, max-age=600
 
@@ -301,7 +305,7 @@ ${htmlCacheRules}
   X-Permitted-Cross-Domain-Policies: none
   X-DNS-Prefetch-Control: off
   Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: accelerometer=(), autoplay=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()
+  Permissions-Policy: accelerometer=(), autoplay=(self), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Resource-Policy: same-origin
 `;
