@@ -997,6 +997,7 @@
     const snowSwitch = panel.querySelector('[data-vibe="snow"]');
     const soundSwitch = panel.querySelector('[data-vibe="sound"]');
     const trackSelect = panel.querySelector('[data-vibe="track"]');
+    const trackRow = trackSelect.closest('.vibe-panel__row');
     const volumeRange = panel.querySelector('[data-vibe="volume"]');
     const closeBtn = panel.querySelector('.vibe-panel__close');
 
@@ -1014,9 +1015,16 @@
     }
 
     function syncSound() {
-      soundSwitch.setAttribute('aria-checked', String(Music.isOn()));
-      panel.classList.toggle('vibe-panel--playing', Music.isOn());
+      const playing = Music.isOn();
+
+      soundSwitch.setAttribute('aria-checked', String(playing));
+      panel.classList.toggle('vibe-panel--playing', playing);
+
+      // Без музыки выбор трека бессмысленен — блокируем его
       trackSelect.value = Music.getTrack();
+      trackSelect.disabled = !playing;
+      trackRow.classList.toggle('vibe-panel__row--disabled', !playing);
+      trackRow.title = playing ? '' : 'Сначала включите музыку';
     }
 
     segButtons.forEach((btn) => {

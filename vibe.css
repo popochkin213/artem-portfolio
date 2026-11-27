@@ -170,6 +170,13 @@ html[data-theme="light"] .vibe-panel {
 
 .vibe-panel__row--volume { cursor: default; }
 
+/* Трек недоступен, пока музыка выключена */
+.vibe-panel__row--disabled {
+  opacity: .42;
+  transition: opacity .2s ease;
+}
+.vibe-panel__row--disabled .vibe-select { cursor: not-allowed; }
+
 .vibe-seg {
   display: inline-flex;
   padding: 3px;
