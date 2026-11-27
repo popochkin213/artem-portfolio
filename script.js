@@ -263,11 +263,9 @@ serviceToast.innerHTML =
 
 const serviceToastText = serviceToast.querySelector('.service-toast__text');
 const serviceToastLink = serviceToast.querySelector('.service-toast__link');
-let toastTimer = 0;
 let toastHideTimer = 0;
 
 function hideServiceToast(instant) {
-  window.clearTimeout(toastTimer);
   window.clearTimeout(toastHideTimer);
   serviceToast.classList.remove('service-toast--show');
 
@@ -288,9 +286,8 @@ function showServiceToast(text) {
   void serviceToast.offsetHeight;
   serviceToast.classList.add('service-toast--show');
 
-  window.clearTimeout(toastTimer);
+  // Плашка висит, пока выбран тариф: пропадает только при снятии выбора
   window.clearTimeout(toastHideTimer);
-  toastTimer = window.setTimeout(hideServiceToast, 6000);
 }
 
 serviceToastLink.addEventListener('click', () => hideServiceToast());
