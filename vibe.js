@@ -117,6 +117,7 @@
       const colors = palette();
       const radius = 1.5 + Math.random() * 3.6;
       const sway = reduceMotion.matches ? 0.35 : 1;
+      const alpha = light ? 0.3 + Math.random() * 0.35 : 0.55 + Math.random() * 0.45;
 
       return {
         x: Math.random() * w,
@@ -126,15 +127,15 @@
         amp: (6 + Math.random() * 22) * sway,
         phase: Math.random() * Math.PI * 2,
         speed: 0.25 + Math.random() * 0.6,
-        alpha: light ? 0.3 + Math.random() * 0.35 : 0.55 + Math.random() * 0.45,
-        color: colors[Math.random() < 0.7 ? 0 : 1],
+        alpha,
+        color: paint(colors[Math.random() < 0.7 ? 0 : 1], alpha),
       };
     }
 
     function repaintColors() {
       const colors = palette();
       flakes.forEach((flake, index) => {
-        flake.color = colors[index % 5 === 0 ? 1 : 0];
+        flake.color = paint(colors[index % 5 === 0 ? 1 : 0], flake.alpha);
       });
     }
 
@@ -201,7 +202,7 @@
       const colors = palette();
       flakes = Array.from({ length: count }, (_, index) => {
         const flake = makeFlake(false);
-        flake.color = colors[index % 5 === 0 ? 1 : 0];
+        flake.color = paint(colors[index % 5 === 0 ? 1 : 0], flake.alpha);
         return flake;
       });
 
