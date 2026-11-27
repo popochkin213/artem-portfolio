@@ -410,6 +410,7 @@
     let nextBellAt = 0;
     let nextArpAt = 0;
     let arpIndex = 0;
+    let startedAt = 0;
     let lastTickAt = 0;
     let chordIndex = 0;
     let on = false;
@@ -670,31 +671,26 @@
     // Позиция в прогрессии хранится в sessionStorage: на новой странице
     // музыка продолжается с того же аккорда, а не начинается сначала.
     function saveState() {
-      if (!on) return;
+      if (!on || !startedAt) return;
       try {
-        sessionStorage.setItem(
-          MUSIC_KEY,
-          JSON.stringify({
-            at: Date.now(),
-            index: chordIndex % track().chords.length,
-          }),
-        );
+        sessionStorage.setItem(MUSIC_KEY, JSON.stringify({ at: Date.now(), startedAt }));
       } catch {
         // Приватный режим — просто начнём с первого аккорда.
       }
     }
 
+    // Возвращает время старта прогрессии (ms) или null, если она устарела
     function readState() {
       try {
         const raw = sessionStorage.getItem(MUSIC_KEY);
         if (!raw) return null;
 
         const data = JSON.parse(raw);
-        if (!data || typeof data.index !== 'number') return null;
-        if (Date.now() - data.at > 5 * 60 * 1000) return null;
+        const saved = Number(data && data.startedAt);
+        if (!Number.isFinite(saved) || saved <= 0) return null;
+        if (Date.now() - saved > 30 * 60 * 1000) return null;
 
-        const len = track().chords.length;
-        return ((data.index % len) + len) % len;
+        return saved;
       } catch {
         return null;
       }
@@ -703,36 +699,43 @@
     // Смена трека: мягко гасим текущий звук и запускаем новый
     let switchToken = 0;
 
-    async function enable() {
+    function enable() {
       if (on) return;
       if (!ctx) init();
 
       const saved = readState();
+      const fresh = saved === null;
+      const t = track();
+
+      // Продолжаем прогрессию с той же точки, а не с первого аккорда
+      startedAt = fresh ? Date.now() : saved;
+      chordIndex = fresh
+        ? 0
+        : Math.floor((Date.now() - startedAt) / 1000 / t.chordEvery) % t.chords.length;
 
       on = true;
-      chordIndex = saved === null ? 0 : saved;
       store.set(KEYS.sound, '1');
       emit();
 
-      try {
-        if (ctx.state === 'suspended') await ctx.resume();
-      } catch {
-        // Браузер подождёт действия человека — включим звук по клику.
+      if (ctx.state === 'running') {
+        fadeTo(volume, fresh ? 1.6 : 0.7);
+        ensureScheduling();
+        return;
       }
 
-      if (ctx.state === 'running') {
-        // Если музыка уже играла на прошлой странице — входим мягко и быстро
-        fadeTo(volume, saved === null ? 1.6 : 0.7);
-        ensureScheduling();
-      } else {
-        armGesture();
-      }
+      // Браузер ещё не разрешил звук. resume() без действия человека может
+      // «зависнуть» навсегда, поэтому не ждём его, а сразу вешаем обработчик
+      // первого клика — он и запустит музыку.
+      armGesture();
+      ctx.resume().catch(() => {});
     }
 
     // Планировщик запускаем только на «живом» контексте: иначе аккорды
     // копятся и после разблокировки звука играют все разом.
     function ensureScheduling() {
       if (!on || !ctx || ctx.state !== 'running') return;
+      // Уже играем и запас есть — второй раз не планируем
+      if (timer && nextChordAt > ctx.currentTime + 0.5) return;
       stopScheduling();
       nextChordAt = ctx.currentTime + 0.15;
       nextBellAt = ctx.currentTime + 2.2;
@@ -826,7 +829,7 @@
     // если браузер разрешит — заиграет сразу, иначе по первому клику.
     function autostart() {
       if (on || store.get(KEYS.sound, '0') !== '1') return;
-      enable().catch(() => {});
+      enable();
     }
 
     // Запоминаем аккорд, чтобы на следующей странице продолжить с него
@@ -870,7 +873,7 @@
         return peak;
       },
       setEnabled(next) {
-        if (next) enable().catch(() => {});
+        if (next) enable();
         else disable();
       },
       setVolume,
