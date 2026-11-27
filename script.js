@@ -218,6 +218,8 @@ form.addEventListener('submit', async (event) => {
 
     showStatus('Заявка отправлена! Отвечу в течение суток.');
     form.reset();
+    renderPicked(null);
+    hideServiceToast(true);
     if (turnstile) turnstile.reset();
   } catch (error) {
     console.error(error);
@@ -264,9 +266,16 @@ const serviceToastLink = serviceToast.querySelector('.service-toast__link');
 let toastTimer = 0;
 let toastHideTimer = 0;
 
-function hideServiceToast() {
-  serviceToast.classList.remove('service-toast--show');
+function hideServiceToast(instant) {
+  window.clearTimeout(toastTimer);
   window.clearTimeout(toastHideTimer);
+  serviceToast.classList.remove('service-toast--show');
+
+  if (instant) {
+    serviceToast.hidden = true;
+    return;
+  }
+
   toastHideTimer = window.setTimeout(() => {
     serviceToast.hidden = true;
   }, 240);
@@ -281,42 +290,79 @@ function showServiceToast(text) {
 
   window.clearTimeout(toastTimer);
   window.clearTimeout(toastHideTimer);
-  toastTimer = window.setTimeout(hideServiceToast, 4500);
+  toastTimer = window.setTimeout(hideServiceToast, 6000);
 }
 
-serviceToastLink.addEventListener('click', hideServiceToast);
+serviceToastLink.addEventListener('click', () => hideServiceToast());
 document.body.append(serviceToast);
 
-document.querySelectorAll('[data-service]').forEach((button) => {
+/* Выбранный пакет: галочка держится, пока выбор не снимут
+   или не выберут другой пакет. */
+const serviceButtons = [...document.querySelectorAll('[data-service]')];
+const serviceSelect = form.elements.service;
+const serviceField = serviceSelect.closest('.field');
+let pickedService = null;
+
+function renderPicked(value) {
+  pickedService = value;
+
+  serviceButtons.forEach((btn) => {
+    if (!btn.dataset.label) btn.dataset.label = btn.textContent.trim();
+    const active = value !== null && btn.dataset.service === value;
+    btn.textContent = active ? '✓ Выбрано' : btn.dataset.label;
+    btn.classList.toggle('is-picked', active);
+    btn.title = active ? 'Нажмите, чтобы снять выбор' : '';
+  });
+}
+
+function clearPicked() {
+  pickedService = null;
+  serviceSelect.value = '';
+  renderPicked(null);
+  showStatus('');
+  hideServiceToast(true);
+  if (serviceField) serviceField.classList.remove('field--picked');
+}
+
+serviceButtons.forEach((button) => {
   button.addEventListener('click', () => {
     const value = button.dataset.service;
-    const select = form.elements.service;
+
+    // Повторное нажатие на выбранный пакет снимает выбор
+    if (pickedService === value) {
+      clearPicked();
+      return;
+    }
 
     // Если такого варианта нет — ставим «Другое»
-    const hasOption = [...select.options].some((option) => option.value === value);
-    select.value = hasOption ? value : 'Другое / не знаю';
+    const hasOption = [...serviceSelect.options].some((option) => option.value === value);
+    serviceSelect.value = hasOption ? value : 'Другое / не знаю';
 
     setError('service', '');
-    showStatus(`Выбрано: ${select.value}`);
-    showServiceToast(select.value);
+    showStatus(`Выбрано: ${serviceSelect.value}`);
+    renderPicked(value);
+    showServiceToast(serviceSelect.value);
 
     // Подсвечиваем поле в форме — при переходе «К заявке» видно, куда смотреть
-    const serviceField = select.closest('.field');
     if (serviceField) {
       serviceField.classList.add('field--picked');
       window.setTimeout(() => serviceField.classList.remove('field--picked'), 2600);
     }
-
-    // Кнопка на пару секунд показывает, что выбор сработал
-    if (!button.dataset.label) button.dataset.label = button.textContent.trim();
-    const original = button.dataset.label;
-    button.textContent = '✓ Выбрано';
-    button.classList.add('is-picked');
-    window.setTimeout(() => {
-      button.textContent = original;
-      button.classList.remove('is-picked');
-    }, 1700);
   });
+});
+
+// Выбор вручную в форме: галочка переезжает на подходящий пакет или снимается
+serviceSelect.addEventListener('change', () => {
+  const value = serviceSelect.value;
+
+  if (!value) {
+    clearPicked();
+    return;
+  }
+
+  const match = serviceButtons.find((btn) => btn.dataset.service === value);
+  renderPicked(match ? value : null);
+  if (!match) hideServiceToast(true);
 });
 
 /* ============================================================
