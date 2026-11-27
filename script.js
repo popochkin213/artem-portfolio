@@ -246,8 +246,45 @@ form.elements.consent.addEventListener('change', () => {
 /* ============================================================
    Кнопки «Выбрать» в блоке услуг
    ------------------------------------------------------------
-   Подставляют пакет в форму заявки, не листая страницу вниз.
+   Подставляют пакет в форму заявки. Со страницы тарифов форма
+   не видна, поэтому рядом с кнопкой появляется заметное
+   подтверждение со ссылкой на заявку.
    ============================================================ */
+const serviceToast = document.createElement('div');
+serviceToast.className = 'service-toast';
+serviceToast.hidden = true;
+serviceToast.setAttribute('role', 'status');
+serviceToast.setAttribute('aria-live', 'polite');
+serviceToast.innerHTML =
+  '<span class="service-toast__text"></span>' +
+  '<a class="service-toast__link" href="#contact">К заявке</a>';
+
+const serviceToastText = serviceToast.querySelector('.service-toast__text');
+const serviceToastLink = serviceToast.querySelector('.service-toast__link');
+let toastTimer = 0;
+let toastHideTimer = 0;
+
+function hideServiceToast() {
+  serviceToast.classList.remove('service-toast--show');
+  window.clearTimeout(toastHideTimer);
+  toastHideTimer = window.setTimeout(() => {
+    serviceToast.hidden = true;
+  }, 240);
+}
+
+function showServiceToast(text) {
+  serviceToastText.textContent = text;
+  serviceToast.hidden = false;
+  window.requestAnimationFrame(() => serviceToast.classList.add('service-toast--show'));
+
+  window.clearTimeout(toastTimer);
+  window.clearTimeout(toastHideTimer);
+  toastTimer = window.setTimeout(hideServiceToast, 4500);
+}
+
+serviceToastLink.addEventListener('click', hideServiceToast);
+document.body.append(serviceToast);
+
 document.querySelectorAll('[data-service]').forEach((button) => {
   button.addEventListener('click', () => {
     const value = button.dataset.service;
@@ -258,12 +295,25 @@ document.querySelectorAll('[data-service]').forEach((button) => {
     select.value = hasOption ? value : 'Другое / не знаю';
 
     setError('service', '');
+    showStatus(`Выбрано: ${select.value}`);
+    showServiceToast(select.value);
 
-    setTimeout(() => {
-      // Не листаем вниз — фокус виден без скролла, пользователь остаётся наверху
-      form.elements.name.focus({ preventScroll: true });
-      showStatus(`Выбрано: ${select.value}`);
-    }, 450);
+    // Подсвечиваем поле в форме — при переходе «К заявке» видно, куда смотреть
+    const serviceField = select.closest('.field');
+    if (serviceField) {
+      serviceField.classList.add('field--picked');
+      window.setTimeout(() => serviceField.classList.remove('field--picked'), 2600);
+    }
+
+    // Кнопка на пару секунд показывает, что выбор сработал
+    if (!button.dataset.label) button.dataset.label = button.textContent.trim();
+    const original = button.dataset.label;
+    button.textContent = '✓ Выбрано';
+    button.classList.add('is-picked');
+    window.setTimeout(() => {
+      button.textContent = original;
+      button.classList.remove('is-picked');
+    }, 1700);
   });
 });
 

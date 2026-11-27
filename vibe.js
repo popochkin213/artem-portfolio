@@ -23,6 +23,7 @@
     snow: 'vibe-snow',
     sound: 'vibe-sound',
     volume: 'vibe-volume',
+    track: 'vibe-track',
   };
 
   const store = {
@@ -375,17 +376,69 @@
      колокольчики. Ни одного аудиофайла — всё синтезируется.
      ========================================================== */
   const Music = (() => {
-    const CHORDS = [
-      { bass: 110.0, notes: [220.0, 261.63, 329.63, 493.88] }, // Am9
-      { bass: 87.31, notes: [174.61, 220.0, 261.63, 329.63] }, // Fmaj7
-      { bass: 65.41, notes: [130.81, 164.81, 196.0, 246.94] }, // Cmaj7
-      { bass: 98.0, notes: [196.0, 246.94, 293.66, 329.63] }, // G6
-      { bass: 73.42, notes: [146.83, 174.61, 220.0, 329.63] }, // Dm9
-    ];
-    const BELLS = [880.0, 1046.5, 1318.5, 1568.0, 1975.5];
-    const CHORD_EVERY = 7; // секунд
-    const PAD_LENGTH = 11;
     const MUSIC_KEY = 'vibe-music-state';
+
+    // Три характера фоновой музыки. Всё синтезируется на месте.
+    const TRACKS = {
+      calm: {
+        label: 'Спокойный',
+        chords: [
+          { bass: 110.0, notes: [220.0, 261.63, 329.63, 493.88] }, // Am9
+          { bass: 87.31, notes: [174.61, 220.0, 261.63, 329.63] }, // Fmaj7
+          { bass: 65.41, notes: [130.81, 164.81, 196.0, 246.94] }, // Cmaj7
+          { bass: 98.0, notes: [196.0, 246.94, 293.66, 329.63] }, // G6
+          { bass: 73.42, notes: [146.83, 174.61, 220.0, 329.63] }, // Dm9
+        ],
+        chordEvery: 7,
+        padLength: 11,
+        padGain: 0.085,
+        bassGain: 0.13,
+        punch: 0,
+        filterHz: 1500,
+        bells: [880.0, 1046.5, 1318.5, 1568.0, 1975.5],
+        bellEvery: [9, 18],
+        bellDecay: 4.5,
+        bellGain: 0.05,
+      },
+      bass: {
+        label: 'Басс',
+        chords: [
+          { bass: 73.42, notes: [146.83, 174.61, 220.0, 261.63] }, // Dm7
+          { bass: 58.27, notes: [116.54, 146.83, 174.61, 220.0] }, // Bbmaj7
+          { bass: 55.0, notes: [110.0, 138.59, 164.81, 196.0] }, // A7
+          { bass: 49.0, notes: [98.0, 116.54, 146.83, 174.61] }, // Gm7
+        ],
+        chordEvery: 8,
+        padLength: 12,
+        padGain: 0.065,
+        bassGain: 0.26,
+        punch: 0.09,
+        filterHz: 850,
+        bells: [440.0, 523.25, 659.25],
+        bellEvery: [16, 28],
+        bellDecay: 3.4,
+        bellGain: 0.032,
+      },
+      sad: {
+        label: 'Грустный',
+        chords: [
+          { bass: 110.0, notes: [220.0, 261.63, 329.63, 392.0] }, // Am7
+          { bass: 87.31, notes: [174.61, 220.0, 261.63, 329.63] }, // Fmaj7
+          { bass: 73.42, notes: [146.83, 174.61, 220.0, 261.63] }, // Dm7
+          { bass: 82.41, notes: [164.81, 207.65, 246.94, 293.66] }, // E7
+        ],
+        chordEvery: 9,
+        padLength: 13,
+        padGain: 0.075,
+        bassGain: 0.08,
+        punch: 0,
+        filterHz: 1150,
+        bells: [1046.5, 1174.66, 1318.51, 1567.98],
+        bellEvery: [6, 12],
+        bellDecay: 6,
+        bellGain: 0.045,
+      },
+    };
 
     let ctx = null;
     let master = null;
@@ -398,8 +451,12 @@
     let lastTickAt = 0;
     let chordIndex = 0;
     let on = false;
+    let trackId = store.get(KEYS.track, 'calm');
+    if (!TRACKS[trackId]) trackId = 'calm';
     let volume = Math.min(1, Math.max(0, Number(store.get(KEYS.volume, '45')) / 100));
     const listeners = new Set();
+
+    const track = () => TRACKS[trackId] || TRACKS.calm;
 
     const emit = () => listeners.forEach((fn) => fn(on, volume));
 
@@ -464,14 +521,14 @@
 
       const filter = ctx.createBiquadFilter();
       filter.type = 'lowpass';
-      filter.frequency.value = 1500;
+      filter.frequency.value = track().filterHz;
       filter.Q.value = 0.6;
 
       // Медленное «дыхание» фильтра — звук не стоит на месте
       const lfo = ctx.createOscillator();
       lfo.frequency.value = 0.06;
       const lfoDepth = ctx.createGain();
-      lfoDepth.gain.value = 420;
+      lfoDepth.gain.value = track().filterHz * 0.28;
       lfo.connect(lfoDepth).connect(filter.frequency);
       lfo.start();
 
@@ -492,6 +549,7 @@
     }
 
     function playPad(chord, at) {
+      const t = track();
       const voice = ctx.createGain();
       // Длинные атака и спад: аккорды перекрываются, поэтому между ними
       // нет провала в тишину.
@@ -499,9 +557,9 @@
       const release = 4.5;
 
       voice.gain.setValueAtTime(0, at);
-      voice.gain.linearRampToValueAtTime(0.085, at + attack);
-      voice.gain.setValueAtTime(0.085, at + PAD_LENGTH - release);
-      voice.gain.linearRampToValueAtTime(0, at + PAD_LENGTH);
+      voice.gain.linearRampToValueAtTime(t.padGain, at + attack);
+      voice.gain.setValueAtTime(t.padGain, at + t.padLength - release);
+      voice.gain.linearRampToValueAtTime(0, at + t.padLength);
       voice.connect(padBus);
 
       chord.notes.forEach((freq) => {
@@ -519,7 +577,7 @@
 
           osc.connect(level).connect(voice);
           osc.start(at);
-          osc.stop(at + PAD_LENGTH + 0.1);
+          osc.stop(at + t.padLength + 0.1);
         });
       });
 
@@ -529,24 +587,41 @@
 
       const bassLevel = ctx.createGain();
       bassLevel.gain.setValueAtTime(0, at);
-      bassLevel.gain.linearRampToValueAtTime(0.13, at + attack);
-      bassLevel.gain.setValueAtTime(0.13, at + PAD_LENGTH - release);
-      bassLevel.gain.linearRampToValueAtTime(0, at + PAD_LENGTH);
+      bassLevel.gain.linearRampToValueAtTime(t.bassGain, at + attack);
+      bassLevel.gain.setValueAtTime(t.bassGain, at + t.padLength - release);
+      bassLevel.gain.linearRampToValueAtTime(0, at + t.padLength);
 
       bass.connect(bassLevel).connect(padBus);
       bass.start(at);
-      bass.stop(at + PAD_LENGTH + 0.1);
+      bass.stop(at + t.padLength + 0.1);
+
+      // У «басового» трека — мягкий удар на смене аккорда
+      if (t.punch > 0) {
+        const punch = ctx.createOscillator();
+        punch.type = 'sine';
+        punch.frequency.value = chord.bass * 2;
+
+        const punchLevel = ctx.createGain();
+        punchLevel.gain.setValueAtTime(0.0001, at);
+        punchLevel.gain.linearRampToValueAtTime(t.punch, at + 0.5);
+        punchLevel.gain.linearRampToValueAtTime(0.0001, at + 2.4);
+
+        punch.connect(punchLevel).connect(padBus);
+        punch.start(at);
+        punch.stop(at + 2.6);
+      }
     }
 
     function playBell(freq, at) {
+      const t = track();
       const osc = ctx.createOscillator();
       osc.type = 'sine';
       osc.frequency.value = freq;
 
       const level = ctx.createGain();
       level.gain.setValueAtTime(0, at);
-      level.gain.linearRampToValueAtTime(0.05, at + 0.02);
-      level.gain.exponentialRampToValueAtTime(0.0005, at + 4.5);
+      level.gain.linearRampToValueAtTime(t.bellGain, at + 0.02);
+      level.gain.exponentialRampToValueAtTime(0.0005, at + t.bellDecay);
 
       let tail = level;
       if (typeof ctx.createStereoPanner === 'function') {
@@ -559,13 +634,14 @@
       osc.connect(level);
       tail.connect(padBus);
       osc.start(at);
-      osc.stop(at + 4.7);
+      osc.stop(at + t.bellDecay + 0.2);
     }
 
     function tick() {
       if (!on || !ctx || ctx.state !== 'running') return;
 
       const now = ctx.currentTime;
+      const t = track();
       lastTickAt = now;
 
       // Если вкладка «спала», не догоняем упущенное пачкой аккордов.
@@ -575,14 +651,14 @@
       // Держим впереди ~12 секунд музыки. Если браузер притормозил
       // таймеры (фоновая вкладка), звук всё равно не прервётся.
       while (nextChordAt < now + 12) {
-        playPad(CHORDS[chordIndex % CHORDS.length], Math.max(nextChordAt, now + 0.05));
+        playPad(t.chords[chordIndex % t.chords.length], Math.max(nextChordAt, now + 0.05));
         chordIndex += 1;
-        nextChordAt += CHORD_EVERY;
+        nextChordAt += t.chordEvery;
       }
 
       while (nextBellAt < now + 12) {
-        playBell(BELLS[Math.floor(Math.random() * BELLS.length)], Math.max(nextBellAt, now + 0.05));
-        nextBellAt += 9 + Math.random() * 9;
+        playBell(t.bells[Math.floor(Math.random() * t.bells.length)], Math.max(nextBellAt, now + 0.05));
+        nextBellAt += t.bellEvery[0] + Math.random() * (t.bellEvery[1] - t.bellEvery[0]);
       }
     }
 
@@ -610,7 +686,11 @@
       try {
         sessionStorage.setItem(
           MUSIC_KEY,
-          JSON.stringify({ at: Date.now(), index: chordIndex % CHORDS.length }),
+          JSON.stringify({
+            at: Date.now(),
+            track: trackId,
+            index: chordIndex % track().chords.length,
+          }),
         );
       } catch {
         // Приватный режим — просто начнём с первого аккорда.
@@ -626,10 +706,55 @@
         if (!data || typeof data.index !== 'number') return null;
         if (Date.now() - data.at > 5 * 60 * 1000) return null;
 
-        return ((data.index % CHORDS.length) + CHORDS.length) % CHORDS.length;
+        const len = track().chords.length;
+        return ((data.index % len) + len) % len;
       } catch {
         return null;
       }
+    }
+
+    // Смена трека: мягко гасим текущий звук и запускаем новый
+    let switchToken = 0;
+
+    function setTrack(id) {
+      if (!TRACKS[id] || id === trackId) return;
+
+      trackId = id;
+      store.set(KEYS.track, id);
+      emit();
+
+      if (!on) return;
+
+      const token = (switchToken += 1);
+      stopScheduling();
+
+      try {
+        fadeTo(0.0001, 0.45);
+      } catch {
+        // Контекст мог закрыться — не страшно.
+      }
+
+      window.setTimeout(() => {
+        if (token !== switchToken || !on) return;
+
+        const dying = ctx;
+        ctx = null;
+        master = null;
+        padBus = null;
+        wet = null;
+        probe = null;
+        if (dying) dying.close().catch(() => {});
+
+        init();
+        chordIndex = 0;
+
+        if (ctx.state === 'running') {
+          fadeTo(volume, 1.1);
+          ensureScheduling();
+        } else {
+          armGesture();
+        }
+      }, 550);
     }
 
     async function enable() {
@@ -715,6 +840,7 @@
     function disable() {
       if (!on) return;
       on = false;
+      switchToken += 1;
       store.set(KEYS.sound, '0');
       emit();
 
@@ -783,6 +909,7 @@
     return {
       isOn: () => on,
       getVolume: () => volume,
+      getTrack: () => trackId,
       contextState: () => (ctx ? ctx.state : 'closed'),
       level() {
         if (!probe || !ctx) return 0;
@@ -799,6 +926,7 @@
         if (next) enable().catch(() => {});
         else disable();
       },
+      setTrack,
       setVolume,
       onChange: (fn) => listeners.add(fn),
       autostart,
@@ -849,6 +977,14 @@
       '<button class="vibe-switch" type="button" role="switch" aria-label="Фоновая музыка" aria-checked="false" data-vibe="sound">' +
       '<span class="vibe-switch__knob"></span></button>' +
       '</div>' +
+      '<div class="vibe-panel__row">' +
+      '<span class="vibe-panel__label">Трек</span>' +
+      '<select class="vibe-select" data-vibe="track" aria-label="Музыкальный трек">' +
+      '<option value="calm">Спокойный</option>' +
+      '<option value="bass">Басс</option>' +
+      '<option value="sad">Грустный</option>' +
+      '</select>' +
+      '</div>' +
       '<label class="vibe-panel__row vibe-panel__row--volume">' +
       '<span class="vibe-panel__label">Громкость</span>' +
       '<input class="vibe-range" type="range" min="0" max="100" step="1" value="45" data-vibe="volume">' +
@@ -860,6 +996,7 @@
     const segButtons = [...panel.querySelectorAll('[data-theme-value]')];
     const snowSwitch = panel.querySelector('[data-vibe="snow"]');
     const soundSwitch = panel.querySelector('[data-vibe="sound"]');
+    const trackSelect = panel.querySelector('[data-vibe="track"]');
     const volumeRange = panel.querySelector('[data-vibe="volume"]');
     const closeBtn = panel.querySelector('.vibe-panel__close');
 
@@ -879,6 +1016,7 @@
     function syncSound() {
       soundSwitch.setAttribute('aria-checked', String(Music.isOn()));
       panel.classList.toggle('vibe-panel--playing', Music.isOn());
+      trackSelect.value = Music.getTrack();
     }
 
     segButtons.forEach((btn) => {
@@ -904,6 +1042,10 @@
     volumeRange.value = String(Math.round(Music.getVolume() * 100));
     volumeRange.addEventListener('input', () => {
       Music.setVolume(Number(volumeRange.value) / 100);
+    });
+
+    trackSelect.addEventListener('change', () => {
+      Music.setTrack(trackSelect.value);
     });
 
     Music.onChange(() => {
