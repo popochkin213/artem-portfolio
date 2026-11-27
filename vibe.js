@@ -15,6 +15,11 @@
 (() => {
   'use strict';
 
+  // Внутри iframe (проект открыт поверх сайта) панель, снег и музыку
+  // не запускаем: всем управляет родительская страница. Так музыка
+  // не прерывается при переходе в проект.
+  if (window.self !== window.top) return;
+
   const root = document.documentElement;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -1062,11 +1067,118 @@
     syncSound();
   }
 
+  /* ==========================================================
+     Проекты без перезагрузки
+     ----------------------------------------------------------
+     Кейс открывается поверх сайта в iframe: документ не
+     перезагружается, поэтому музыка и снег продолжают работать.
+     Кнопка «Все проекты» внутри кейса просто закрывает его.
+     ========================================================== */
+  function initCaseOverlay() {
+    if (!window.history || typeof history.pushState !== 'function') return;
+
+    let overlay = null;
+    let frame = null;
+
+    function ensureOverlay() {
+      if (overlay) return;
+
+      overlay = document.createElement('div');
+      overlay.className = 'case-overlay';
+      overlay.hidden = true;
+      overlay.setAttribute('role', 'region');
+      overlay.setAttribute('aria-label', 'Проект');
+
+      frame = document.createElement('iframe');
+      frame.title = 'Проект';
+      frame.setAttribute('allow', 'autoplay');
+      overlay.append(frame);
+      document.body.append(overlay);
+
+      frame.addEventListener('load', () => {
+        let doc = null;
+        try {
+          doc = frame.contentDocument;
+        } catch {
+          return;
+        }
+        if (!doc || !doc.body) return;
+
+        // Ссылки внутри кейса не должны перезагружать страницу
+        doc.addEventListener('click', (event) => {
+          const link = event.target.closest && event.target.closest('a[href]');
+          if (!link) return;
+
+          const url = new URL(link.getAttribute('href'), location.href);
+          if (url.origin !== location.origin) return;
+
+          if (url.pathname === '/' || url.pathname === '/index.html') {
+            event.preventDefault();
+            close();
+          }
+        });
+
+        doc.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape') close();
+        });
+      });
+    }
+
+    function open(url, push) {
+      ensureOverlay();
+      overlay.hidden = false;
+      root.classList.add('case-open');
+
+      const absolute = new URL(url, location.href).href;
+      if (frame.src !== absolute) frame.src = absolute;
+      if (push) history.pushState({ caseUrl: absolute }, '', absolute);
+
+      try {
+        frame.focus({ preventScroll: true });
+      } catch {
+        // Фокус — не критично
+      }
+    }
+
+    function close() {
+      if (!overlay || overlay.hidden) return;
+      overlay.hidden = true;
+      root.classList.remove('case-open');
+      if (location.pathname !== '/') history.back();
+    }
+
+    document.addEventListener('click', (event) => {
+      if (event.defaultPrevented || event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+      const link = event.target.closest && event.target.closest('a[href]');
+      if (!link || link.target === '_blank' || link.hasAttribute('download')) return;
+
+      const url = new URL(link.href, location.href);
+      if (url.origin !== location.origin) return;
+      if (!url.pathname.startsWith('/cases/')) return;
+
+      event.preventDefault();
+      open(url.pathname + url.search, true);
+    }, true);
+
+    window.addEventListener('popstate', () => {
+      if (!overlay || overlay.hidden) return;
+      overlay.hidden = true;
+      root.classList.remove('case-open');
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && overlay && !overlay.hidden) close();
+    });
+  }
+
   function boot() {
     buildPanel();
 
     if (store.get(KEYS.snow, '0') === '1') Snow.set(true);
     Music.autostart();
+    initCaseOverlay();
   }
 
   // Небольшой публичный доступ: удобно проверять состояние из консоли
