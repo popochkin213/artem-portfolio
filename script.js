@@ -275,7 +275,9 @@ function hideServiceToast() {
 function showServiceToast(text) {
   serviceToastText.textContent = text;
   serviceToast.hidden = false;
-  window.requestAnimationFrame(() => serviceToast.classList.add('service-toast--show'));
+  // Принудительный пересчёт: без него браузер может не запустить анимацию
+  void serviceToast.offsetHeight;
+  serviceToast.classList.add('service-toast--show');
 
   window.clearTimeout(toastTimer);
   window.clearTimeout(toastHideTimer);

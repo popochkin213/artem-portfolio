@@ -1059,7 +1059,9 @@
       panel.hidden = false;
       button.setAttribute('aria-expanded', 'true');
       button.classList.remove('vibe-toggle--hint');
-      requestAnimationFrame(() => panel.classList.add('vibe-panel--open'));
+      // Пересчёт, чтобы анимация появления сработала сразу и надёжно
+      void panel.offsetHeight;
+      panel.classList.add('vibe-panel--open');
       syncTheme();
       syncSnow();
       syncSound();
